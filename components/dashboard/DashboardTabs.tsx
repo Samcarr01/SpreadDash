@@ -24,44 +24,259 @@ interface DashboardTabsProps {
   upload: UploadRecord
 }
 
+// Month name mappings for detection
+const MONTH_NAMES_FULL = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+const MONTH_NAMES_SHORT = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+/**
+ * Extract month number (1-12) from a string if it contains a month name
+ */
+function extractMonth(str: string): number | null {
+  const lower = str.toLowerCase()
+
+  // Check full month names
+  for (let i = 0; i < MONTH_NAMES_FULL.length; i++) {
+    if (lower.includes(MONTH_NAMES_FULL[i])) return i + 1
+  }
+
+  // Check short month names (with word boundary to avoid false matches like "market")
+  for (let i = 0; i < MONTH_NAMES_SHORT.length; i++) {
+    const regex = new RegExp(`\\b${MONTH_NAMES_SHORT[i]}\\b`, 'i')
+    if (regex.test(lower)) return i + 1
+  }
+
+  return null
+}
+
+/**
+ * Extract quarter number (1-4) from a string
+ */
+function extractQuarter(str: string): number | null {
+  const match = str.match(/\bq([1-4])\b/i)
+  if (match) return parseInt(match[1], 10)
+  return null
+}
+
+/**
+ * Extract year from a string (2000-2099 range)
+ */
+function extractYear(str: string): number | null {
+  // Match 4-digit years
+  const match4 = str.match(/\b(20\d{2})\b/)
+  if (match4) return parseInt(match4[1], 10)
+
+  // Match 2-digit years (20-99 assumed 2020-2099, 00-19 assumed 2000-2019)
+  const match2 = str.match(/\b['']?(\d{2})\b/)
+  if (match2) {
+    const yr = parseInt(match2[1], 10)
+    return yr >= 0 && yr <= 99 ? (yr < 50 ? 2000 + yr : 1900 + yr) : null
+  }
+
+  return null
+}
+
+/**
+ * Calculate a sortable period number from time components
+ */
+function calculatePeriodNumber(month: number | null, quarter: number | null, year: number | null, index: number): number {
+  // If we have year + month, use year*12 + month for proper sorting
+  if (year && month) {
+    return year * 12 + month
+  }
+
+  // If we have year + quarter, use year*4 + quarter
+  if (year && quarter) {
+    return year * 4 + quarter
+  }
+
+  // If we have just year
+  if (year) {
+    return year
+  }
+
+  // If we have just month (assume same year, use month order)
+  if (month) {
+    return month
+  }
+
+  // If we have just quarter
+  if (quarter) {
+    return quarter
+  }
+
+  // Fallback to index
+  return index + 1
+}
+
+/**
+ * Comprehensive time-series column detection
+ * Handles various patterns: months, quarters, years, prefixed/suffixed patterns, and numeric suffixes
+ */
 function detectTimeSeriesColumns(headers: string[]) {
-  // Match both number patterns (_1, _2) and letter patterns (_A, _B, _A1, _B1)
+  const groups: Map<string, { baseName: string; periods: { period: number; column: string; label?: string }[] }> = new Map()
+
+  // Track which headers have been assigned to groups
+  const assigned = new Set<string>()
+
+  // === PATTERN 1: Underscore + Number (Website_1, Website_2) ===
   const numberPattern = /^(.+?)_(\d+)$/
-  const letterPattern = /^(.+?)_([A-Z])(\d*)$/
-  const groups: Map<string, { baseName: string; periods: { period: number; column: string }[] }> = new Map()
-
   headers.forEach((header) => {
-    // Try number pattern first (e.g., Website_1, Website_2)
-    let match = header.match(numberPattern)
-    if (match) {
-      const baseName = match[1].replace(/_/g, ' ').trim()
-      const period = parseInt(match[2], 10)
+    const match = header.match(numberPattern)
+    if (!match) return
 
-      if (!groups.has(baseName)) {
-        groups.set(baseName, { baseName, periods: [] })
-      }
-      groups.get(baseName)!.periods.push({ period, column: header })
-      return
+    const baseName = match[1].replace(/_/g, ' ').trim()
+    const period = parseInt(match[2], 10)
+
+    if (!groups.has(baseName)) {
+      groups.set(baseName, { baseName, periods: [] })
     }
+    groups.get(baseName)!.periods.push({ period, column: header })
+    assigned.add(header)
+  })
 
-    // Try letter pattern (e.g., Column_A, Column_B, Column_A1)
-    match = header.match(letterPattern)
-    if (match) {
-      const baseName = match[1].replace(/_/g, ' ').trim()
-      const letter = match[2]
-      const suffix = match[3] ? parseInt(match[3], 10) : 0
+  // === PATTERN 2: Underscore + Letter (Column_A, Column_B) ===
+  const letterPattern = /^(.+?)_([A-Z])(\d*)$/
+  headers.forEach((header) => {
+    if (assigned.has(header)) return
+    const match = header.match(letterPattern)
+    if (!match) return
 
-      // Convert letter to number: A=1, B=2, ..., Z=26, then A1=27, B1=28, etc.
-      const letterValue = letter.charCodeAt(0) - 64 // A=1, B=2, etc.
-      const period = suffix * 26 + letterValue
+    const baseName = match[1].replace(/_/g, ' ').trim()
+    const letter = match[2]
+    const suffix = match[3] ? parseInt(match[3], 10) : 0
+    const period = suffix * 26 + (letter.charCodeAt(0) - 64)
 
-      if (!groups.has(baseName)) {
-        groups.set(baseName, { baseName, periods: [] })
-      }
-      groups.get(baseName)!.periods.push({ period, column: header })
+    if (!groups.has(baseName)) {
+      groups.set(baseName, { baseName, periods: [] })
+    }
+    groups.get(baseName)!.periods.push({ period, column: header })
+    assigned.add(header)
+  })
+
+  // === PATTERN 3: Direct month/quarter/year columns ===
+  // Detect columns that ARE time periods (e.g., "January", "Q1", "2024", "Jan 2024")
+  const timeColumns: { header: string; month: number | null; quarter: number | null; year: number | null; index: number }[] = []
+
+  headers.forEach((header, index) => {
+    if (assigned.has(header)) return
+
+    const month = extractMonth(header)
+    const quarter = extractQuarter(header)
+    const year = extractYear(header)
+
+    // Only include if we found at least one time component
+    if (month || quarter || year) {
+      timeColumns.push({ header, month, quarter, year, index })
     }
   })
 
+  // If we found multiple time columns, group them
+  if (timeColumns.length >= 2) {
+    // Determine the type of time series
+    const hasMonths = timeColumns.some(t => t.month !== null)
+    const hasQuarters = timeColumns.some(t => t.quarter !== null)
+    const hasYears = timeColumns.some(t => t.year !== null)
+
+    let groupName = 'Value'
+    if (hasMonths) groupName = 'Monthly'
+    else if (hasQuarters) groupName = 'Quarterly'
+    else if (hasYears) groupName = 'Yearly'
+
+    if (!groups.has(groupName)) {
+      groups.set(groupName, { baseName: groupName, periods: [] })
+    }
+
+    timeColumns.forEach(({ header, month, quarter, year, index }) => {
+      const period = calculatePeriodNumber(month, quarter, year, index)
+      groups.get(groupName)!.periods.push({ period, column: header, label: header })
+      assigned.add(header)
+    })
+  }
+
+  // === PATTERN 4: Prefix/Suffix patterns (Sales Jan, Sales Feb OR Jan Sales, Feb Sales) ===
+  // Group unassigned headers by their non-time components
+  const unassignedHeaders = headers.filter(h => !assigned.has(h))
+
+  if (unassignedHeaders.length >= 2) {
+    // Try to find common prefix or suffix patterns
+    const prefixGroups: Map<string, { header: string; timePart: string; month: number | null; quarter: number | null; year: number | null }[]> = new Map()
+    const suffixGroups: Map<string, { header: string; timePart: string; month: number | null; quarter: number | null; year: number | null }[]> = new Map()
+
+    unassignedHeaders.forEach((header) => {
+      const month = extractMonth(header)
+      const quarter = extractQuarter(header)
+      const year = extractYear(header)
+
+      if (!month && !quarter && !year) return
+
+      // Extract the non-time part
+      let remaining = header
+
+      // Remove month names
+      MONTH_NAMES_FULL.forEach(m => {
+        remaining = remaining.replace(new RegExp(m, 'gi'), '').trim()
+      })
+      MONTH_NAMES_SHORT.forEach(m => {
+        remaining = remaining.replace(new RegExp(`\\b${m}\\b`, 'gi'), '').trim()
+      })
+
+      // Remove quarter patterns
+      remaining = remaining.replace(/\bq[1-4]\b/gi, '').trim()
+
+      // Remove year patterns
+      remaining = remaining.replace(/\b20\d{2}\b/g, '').trim()
+      remaining = remaining.replace(/\b['']?\d{2}\b/g, '').trim()
+
+      // Clean up separators
+      remaining = remaining.replace(/^[\s\-_:]+|[\s\-_:]+$/g, '').trim()
+
+      if (remaining) {
+        // Check if time comes before or after the base name
+        const headerLower = header.toLowerCase()
+        const remainingLower = remaining.toLowerCase()
+
+        if (headerLower.indexOf(remainingLower) === 0) {
+          // Base name is prefix (e.g., "Sales January" -> prefix "Sales")
+          if (!prefixGroups.has(remaining)) prefixGroups.set(remaining, [])
+          prefixGroups.get(remaining)!.push({ header, timePart: header.slice(remaining.length).trim(), month, quarter, year })
+        } else {
+          // Base name is suffix (e.g., "January Sales" -> suffix "Sales")
+          if (!suffixGroups.has(remaining)) suffixGroups.set(remaining, [])
+          suffixGroups.get(remaining)!.push({ header, timePart: header.slice(0, header.toLowerCase().lastIndexOf(remainingLower)).trim(), month, quarter, year })
+        }
+      }
+    })
+
+    // Add valid prefix groups (2+ columns with same prefix)
+    prefixGroups.forEach((items, baseName) => {
+      if (items.length >= 2) {
+        if (!groups.has(baseName)) {
+          groups.set(baseName, { baseName, periods: [] })
+        }
+        items.forEach(({ header, month, quarter, year }, index) => {
+          const period = calculatePeriodNumber(month, quarter, year, index)
+          groups.get(baseName)!.periods.push({ period, column: header, label: header })
+          assigned.add(header)
+        })
+      }
+    })
+
+    // Add valid suffix groups (2+ columns with same suffix)
+    suffixGroups.forEach((items, baseName) => {
+      if (items.length >= 2) {
+        if (!groups.has(baseName)) {
+          groups.set(baseName, { baseName, periods: [] })
+        }
+        items.forEach(({ header, month, quarter, year }, index) => {
+          const period = calculatePeriodNumber(month, quarter, year, index)
+          groups.get(baseName)!.periods.push({ period, column: header, label: header })
+          assigned.add(header)
+        })
+      }
+    })
+  }
+
+  // Filter to groups with at least 2 periods and sort periods
   const validGroups = Array.from(groups.values()).filter((group) => group.periods.length >= 2)
   validGroups.forEach((group) => group.periods.sort((a, b) => a.period - b.period))
 
@@ -84,19 +299,48 @@ function getRowLabelColumn(headers: string[], data: Record<string, unknown>[]) {
   return headers[0]
 }
 
-function getPeriodLabel(period: number, index: number, periodType: string, aiPeriodLabels: string[], totalPeriods: number = 12) {
+function getPeriodLabel(
+  period: number,
+  index: number,
+  periodType: string,
+  aiPeriodLabels: string[],
+  columnLabel?: string
+) {
+  // If we have a stored column label (from direct time column detection), use it
+  if (columnLabel) {
+    return columnLabel
+  }
+
+  // If AI provided labels, use them
   if (aiPeriodLabels[index]) {
     return aiPeriodLabels[index]
   }
 
+  // For large period numbers that look like year*12+month, decode them
+  if (period > 2000 * 12) {
+    const year = Math.floor(period / 12)
+    const month = period % 12 || 12
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return `${monthNames[month - 1]} ${year}`
+  }
+
+  // For period numbers that look like year*4+quarter, decode them
+  if (period > 2000 * 4 && period < 2000 * 12) {
+    const year = Math.floor(period / 4)
+    const quarter = period % 4 || 4
+    return `Q${quarter} ${year}`
+  }
+
+  // For period numbers that look like years directly (2000-2100)
+  if (period >= 2000 && period <= 2100) {
+    return String(period)
+  }
+
   if (periodType === 'month') {
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    // For datasets with <= 12 periods, assume recent months ending at current month
-    // For period numbers 1-12, map directly to months
     if (period >= 1 && period <= 12) {
       return monthNames[period - 1]
     }
-    // For larger period numbers (e.g., multi-year data), include year context
     const yearOffset = Math.floor((period - 1) / 12)
     const monthIndex = (period - 1) % 12
     if (yearOffset > 0) {
@@ -106,7 +350,6 @@ function getPeriodLabel(period: number, index: number, periodType: string, aiPer
   }
 
   if (periodType === 'quarter') {
-    // Support multi-year quarters
     if (period > 4) {
       const yearOffset = Math.floor((period - 1) / 4)
       const quarterNum = ((period - 1) % 4) + 1
@@ -123,8 +366,7 @@ function getPeriodLabel(period: number, index: number, periodType: string, aiPer
     return String(period)
   }
 
-  // Default fallback: assume monthly if we don't have a period type
-  // This is better than "Period X" which is meaningless
+  // Default fallback: assume monthly if period is 1-12
   if (period >= 1 && period <= 12) {
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     return monthNames[period - 1]
@@ -278,15 +520,32 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
     [sortedGroups]
   )
 
-  const allSortedPeriods = useMemo(() => {
-    const allPeriods = new Set<number>()
-    visibleSeriesGroups.forEach((group) => group.periods.forEach((period) => allPeriods.add(period.period)))
-    return Array.from(allPeriods).sort((a, b) => a - b)
+  // Collect all periods with their labels
+  const allSortedPeriodsWithLabels = useMemo(() => {
+    const periodsMap = new Map<number, string | undefined>()
+    visibleSeriesGroups.forEach((group) => {
+      group.periods.forEach((p) => {
+        // Keep the label if we have one (from direct time column detection)
+        if (!periodsMap.has(p.period) || p.label) {
+          periodsMap.set(p.period, p.label)
+        }
+      })
+    })
+    return Array.from(periodsMap.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([period, label]) => ({ period, label }))
   }, [visibleSeriesGroups])
 
+  const allSortedPeriods = useMemo(
+    () => allSortedPeriodsWithLabels.map(p => p.period),
+    [allSortedPeriodsWithLabels]
+  )
+
   const periodLabels = useMemo(
-    () => allSortedPeriods.map((period, index) => getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels)),
-    [allSortedPeriods, aiPeriodType, aiPeriodLabels]
+    () => allSortedPeriodsWithLabels.map(({ period, label }, index) =>
+      getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels, label)
+    ),
+    [allSortedPeriodsWithLabels, aiPeriodType, aiPeriodLabels]
   )
 
   // For transposed data: series names are row labels, not column group names
@@ -362,9 +621,9 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
       const group = visibleSeriesGroups[0]
       const visibleRows = transposedRowLabels.slice(0, CHART_MAX_VISIBLE_SERIES)
 
-      return group.periods.map(({ period, column }, index) => {
+      return group.periods.map(({ period, column, label: colLabel }, index) => {
         const point: Record<string, unknown> = {
-          period: getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels),
+          period: getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels, colLabel),
         }
 
         visibleRows.forEach(({ label, rowIndex }) => {
@@ -378,9 +637,9 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
     }
 
     // Normal data: each column group is a series
-    return allSortedPeriods.map((period, index) => {
+    return allSortedPeriodsWithLabels.map(({ period, label: colLabel }, index) => {
       const point: Record<string, unknown> = {
-        period: getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels),
+        period: getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels, colLabel),
       }
 
       visibleSeriesGroups.forEach((group) => {
@@ -398,7 +657,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
       return point
     })
-  }, [visibleSeriesGroups, allSortedPeriods, aiPeriodType, aiPeriodLabels, upload.raw_data, isTransposed, transposedRowLabels])
+  }, [visibleSeriesGroups, allSortedPeriodsWithLabels, aiPeriodType, aiPeriodLabels, upload.raw_data, isTransposed, transposedRowLabels])
 
   const activityChartData = useMemo(() => {
     if (!labelColumn || visibleSeriesGroups.length === 0) return []
@@ -408,9 +667,9 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
       const group = visibleSeriesGroups[0]
       const rowsToShow = transposedRowLabels.slice(0, 3)
 
-      return group.periods.slice(0, 12).map(({ period, column }, index) => {
+      return group.periods.slice(0, 12).map(({ period, column, label: colLabel }, index) => {
         const point: Record<string, unknown> = {
-          name: getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels).slice(0, 24),
+          name: getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels, colLabel).slice(0, 24),
         }
 
         rowsToShow.forEach(({ label, rowIndex }) => {
