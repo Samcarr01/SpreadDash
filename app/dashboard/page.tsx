@@ -2,11 +2,10 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import DropZone from '@/components/upload/DropZone'
 import TopBar from '@/components/layout/TopBar'
+import RecentUploads from '@/components/dashboard/RecentUploads'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { UploadSummary } from '@/types'
-import Link from 'next/link'
-import { FileSpreadsheet, Upload } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { getSessionFromCookies } from '@/lib/auth'
 import { supabaseServer } from '@/lib/supabase/server'
 
@@ -112,45 +111,7 @@ export default async function DashboardPage() {
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {uploads.map((upload) => (
-                <Link key={upload.id} href={`/dashboard/${upload.id}`}>
-                  <Card className="surface-card h-full cursor-pointer p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50">
-                    <div className="flex items-start gap-3">
-                      <FileSpreadsheet className="h-8 w-8 text-primary flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm mb-1 truncate">
-                          {upload.label || upload.filename}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mb-2 truncate">
-                          {upload.filename}
-                        </p>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {upload.row_count} rows
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            {upload.column_count} cols
-                          </Badge>
-                          {upload.ai_status === 'completed' && (
-                            <Badge variant="outline" className="text-xs">
-                              AI ✓
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(upload.uploaded_at).toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })} • {upload.uploaded_by}
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
+            <RecentUploads uploads={uploads} />
           )}
         </section>
       </div>

@@ -161,7 +161,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
                       onClick={() => setIsMobileOpen(false)}
                       className="block"
                     >
-                      <div className="flex items-start gap-2 pr-10">
+                      <div className="flex items-start gap-2">
                         <FileSpreadsheet
                           className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
                             isActive ? 'text-primary' : 'text-muted-foreground'
@@ -171,13 +171,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
                           <p className="font-medium text-sm truncate">
                             {upload.label || upload.filename}
                           </p>
-                          <p
-                            className={`text-xs truncate ${
-                              isActive
-                                ? 'text-muted-foreground'
-                                : 'text-muted-foreground'
-                            }`}
-                          >
+                          <p className="text-xs truncate text-muted-foreground">
                             {new Date(upload.uploaded_at).toLocaleDateString(
                               'en-GB',
                               {
@@ -187,7 +181,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
                               }
                             )}
                           </p>
-                          <div className="flex gap-1 mt-1">
+                          <div className="mt-1 flex gap-1">
                             <Badge
                               variant={isActive ? 'outline' : 'secondary'}
                               className="text-xs font-medium"
@@ -199,21 +193,22 @@ export default function Sidebar({ uploads }: SidebarProps) {
                       </div>
                     </Link>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Delete ${upload.label || upload.filename}`}
-                      className={`absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-destructive/80 hover:text-destructive ${
-                        isActive ? 'hover:bg-muted/80' : 'hover:bg-muted/70'
-                      }`}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setDeleteTarget(upload)
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="mt-2 flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Delete ${upload.label || upload.filename}`}
+                        className="h-7 px-2 text-xs font-medium text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setDeleteTarget(upload)
+                        }}
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 )
               })}
