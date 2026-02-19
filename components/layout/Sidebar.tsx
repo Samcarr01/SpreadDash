@@ -138,7 +138,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
 
       {/* Upload List */}
       <ScrollArea className="flex-1">
-        <div className="p-2">
+        <div className="p-2 pr-3">
           {filteredUploads.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               {searchTerm ? 'No uploads found' : 'No uploads yet'}
