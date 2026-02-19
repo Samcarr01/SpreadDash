@@ -46,7 +46,12 @@ Your job is to provide actionable business intelligence:
    - focusAreas: What should the team pay attention to? (2-3 areas)
    - chartSuggestion: What type of chart would best visualize this data?
    - periodType: If columns have _1, _2, _3 suffixes, what do they represent? (month/quarter/week/year/period)
-   - periodLabels: Human-friendly labels for each period (e.g., ["Jan", "Feb", "Mar"] or ["Q1", "Q2", "Q3", "Q4"] or ["Week 1", "Week 2"])
+   - periodLabels: IMPORTANT - Provide human-readable date labels, NOT "Period 1", "Period 2" etc.
+     * If periodType is "month": Use month names like ["Jan", "Feb", "Mar", "Apr"] or ["January", "February", "March", "April"]
+     * If periodType is "quarter": Use ["Q1", "Q2", "Q3", "Q4"]
+     * If periodType is "week": Use ["Week 1", "Week 2", "Week 3"] or actual dates
+     * If you can infer the actual dates from context, use them (e.g., ["Jan 2024", "Feb 2024"])
+     * NEVER use generic labels like "Period 1", "Period 2" - these are meaningless to users
 
 Rules:
 - Be SPECIFIC: reference actual column names, numbers, and percentages
@@ -154,11 +159,11 @@ Analyze this data and respond with valid JSON:
   ],
   "dataQualityConcerns": ["Only if there are genuine issues, otherwise empty array"],
   "displayRecommendations": {
-    "topMetrics": ["Most important metric/channel", "Second most important"],
-    "focusAreas": ["Area needing attention", "Another focus area"],
-    "chartSuggestion": "A line chart showing X over time would best reveal trends",
+    "topMetrics": ["Facebook", "Website", "YouTube"],
+    "focusAreas": ["Facebook growth opportunity", "Website traffic decline"],
+    "chartSuggestion": "Line chart showing channel performance over time",
     "periodType": "month",
-    "periodLabels": ["Jan", "Feb", "Mar", "Apr"]
+    "periodLabels": ["February", "March", "April", "May"]
   }
 }`
 }

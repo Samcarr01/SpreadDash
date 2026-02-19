@@ -100,8 +100,12 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
   }, [upload.ai_analysis])
 
   // Get AI-provided period labels (e.g., "Jan", "Feb" instead of "Period 1", "Period 2")
+  // Filter out generic "Period X" labels - they're not helpful to users
   const aiPeriodLabels = useMemo(() => {
-    return upload.ai_analysis?.displayRecommendations?.periodLabels || []
+    const labels = upload.ai_analysis?.displayRecommendations?.periodLabels || []
+    // If labels are just generic "Period X", return empty to trigger the month/quarter fallback
+    const hasGenericLabels = labels.some((l) => /^Period\s*\d+$/i.test(l))
+    return hasGenericLabels ? [] : labels
   }, [upload.ai_analysis])
 
   const aiPeriodType = useMemo(() => {
