@@ -115,6 +115,7 @@ export default function DropZone() {
 
       // Redirect to the new upload's dashboard
       await new Promise((resolve) => setTimeout(resolve, 500))
+      router.refresh() // Refresh server components (updates sidebar)
       router.push(`/dashboard/${data.data.id}`)
     } catch (err) {
       setUploadStatus('error')
