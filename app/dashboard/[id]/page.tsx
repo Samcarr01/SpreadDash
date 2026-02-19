@@ -9,8 +9,13 @@ async function getUpload(id: string): Promise<UploadRecord | null> {
     const cookieStore = cookies()
     const sessionCookie = cookieStore.get('sd_session')
 
+    // Use VERCEL_URL in production, localhost in development
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3000'
+
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('supabase.co', '') || 'http://localhost:3000'}/api/uploads/${id}`,
+      `${baseUrl}/api/uploads/${id}`,
       {
         headers: {
           Cookie: `sd_session=${sessionCookie?.value || ''}`,
