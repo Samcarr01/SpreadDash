@@ -41,6 +41,13 @@ Your job is to provide actionable business intelligence:
    - Missing values, outliers, formatting issues
    - Only include if genuinely problematic
 
+7. DISPLAY RECOMMENDATIONS
+   - topMetrics: Which 3-6 metrics/channels are MOST important for this data?
+   - focusAreas: What should the team pay attention to? (2-3 areas)
+   - chartSuggestion: What type of chart would best visualize this data?
+   - periodType: If columns have _1, _2, _3 suffixes, what do they represent? (month/quarter/week/year/period)
+   - periodLabels: Human-friendly labels for each period (e.g., ["Jan", "Feb", "Mar"] or ["Q1", "Q2", "Q3", "Q4"] or ["Week 1", "Week 2"])
+
 Rules:
 - Be SPECIFIC: reference actual column names, numbers, and percentages
 - Be ACTIONABLE: every recommendation should be something they can DO
@@ -145,7 +152,14 @@ Analyze this data and respond with valid JSON:
     "Specific action the team should take",
     "Another action item"
   ],
-  "dataQualityConcerns": ["Only if there are genuine issues, otherwise empty array"]
+  "dataQualityConcerns": ["Only if there are genuine issues, otherwise empty array"],
+  "displayRecommendations": {
+    "topMetrics": ["Most important metric/channel", "Second most important"],
+    "focusAreas": ["Area needing attention", "Another focus area"],
+    "chartSuggestion": "A line chart showing X over time would best reveal trends",
+    "periodType": "month",
+    "periodLabels": ["Jan", "Feb", "Mar", "Apr"]
+  }
 }`
 }
 

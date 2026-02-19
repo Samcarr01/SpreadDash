@@ -33,6 +33,7 @@ import {
   Lightbulb,
   ArrowRight,
   Activity,
+  Target,
 } from 'lucide-react'
 
 interface DashboardTabsProps {
@@ -93,11 +94,45 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
     return getRowLabelColumn(upload.sheet_meta.headers, upload.raw_data)
   }, [upload.sheet_meta.headers, upload.raw_data])
 
+  // Get AI recommendations for which metrics to prioritize
+  const aiTopMetrics = useMemo(() => {
+    return upload.ai_analysis?.displayRecommendations?.topMetrics || []
+  }, [upload.ai_analysis])
+
+  // Get AI-provided period labels (e.g., "Jan", "Feb" instead of "Period 1", "Period 2")
+  const aiPeriodLabels = useMemo(() => {
+    return upload.ai_analysis?.displayRecommendations?.periodLabels || []
+  }, [upload.ai_analysis])
+
+  const aiPeriodType = useMemo(() => {
+    return upload.ai_analysis?.displayRecommendations?.periodType || 'period'
+  }, [upload.ai_analysis])
+
   // Calculate channel totals and trends for KPI cards
   const channelMetrics = useMemo(() => {
     if (timeSeriesGroups.length === 0) return []
 
-    return timeSeriesGroups.slice(0, 8).map((group) => {
+    // Sort groups by AI recommendation priority
+    let sortedGroups = [...timeSeriesGroups]
+    if (aiTopMetrics.length > 0) {
+      sortedGroups.sort((a, b) => {
+        const aIndex = aiTopMetrics.findIndex((m) =>
+          a.baseName.toLowerCase().includes(m.toLowerCase()) ||
+          m.toLowerCase().includes(a.baseName.toLowerCase())
+        )
+        const bIndex = aiTopMetrics.findIndex((m) =>
+          b.baseName.toLowerCase().includes(m.toLowerCase()) ||
+          m.toLowerCase().includes(b.baseName.toLowerCase())
+        )
+        // Put AI-recommended metrics first
+        if (aIndex >= 0 && bIndex < 0) return -1
+        if (bIndex >= 0 && aIndex < 0) return 1
+        if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex
+        return 0
+      })
+    }
+
+    return sortedGroups.slice(0, 8).map((group) => {
       const allValues: number[] = []
       const periodTotals: { period: number; total: number }[] = []
 
@@ -138,9 +173,24 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
     timeSeriesGroups.forEach((g) => g.periods.forEach((p) => allPeriods.add(p.period)))
     const sortedPeriods = Array.from(allPeriods).sort((a, b) => a - b)
 
-    // Build chart data
-    return sortedPeriods.map((period) => {
-      const dataPoint: Record<string, unknown> = { period: `Period ${period}` }
+    // Build chart data with AI-provided labels or fallback
+    return sortedPeriods.map((period, idx) => {
+      // Use AI label if available, otherwise generate based on period type
+      let periodLabel: string
+      if (aiPeriodLabels[idx]) {
+        periodLabel = aiPeriodLabels[idx]
+      } else if (aiPeriodType === 'month') {
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        periodLabel = monthNames[(period - 1) % 12] || `Month ${period}`
+      } else if (aiPeriodType === 'quarter') {
+        periodLabel = `Q${period}`
+      } else if (aiPeriodType === 'week') {
+        periodLabel = `Week ${period}`
+      } else {
+        periodLabel = `Period ${period}`
+      }
+
+      const dataPoint: Record<string, unknown> = { period: periodLabel }
 
       timeSeriesGroups.slice(0, 6).forEach((group) => {
         const periodData = group.periods.find((p) => p.period === period)
@@ -156,7 +206,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
       return dataPoint
     })
-  }, [timeSeriesGroups, upload.raw_data])
+  }, [timeSeriesGroups, upload.raw_data, aiPeriodLabels, aiPeriodType])
 
   // Create per-activity breakdown chart data
   const activityChartData = useMemo(() => {
@@ -378,6 +428,25 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
                 <p className="text-indigo-800 dark:text-indigo-200 leading-relaxed">
                   {upload.ai_analysis.executiveSummary}
                 </p>
+
+                {/* AI Focus Areas */}
+                {upload.ai_analysis.displayRecommendations?.focusAreas &&
+                 upload.ai_analysis.displayRecommendations.focusAreas.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-700">
+                    <p className="font-medium text-indigo-900 dark:text-indigo-100 mb-2 flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Key Focus Areas
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {upload.ai_analysis.displayRecommendations.focusAreas.map((area, idx) => (
+                        <Badge key={idx} variant="outline" className="bg-indigo-100/50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-600">
+                          {area}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {upload.ai_analysis.actionItems && upload.ai_analysis.actionItems.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-700">
                     <p className="font-medium text-indigo-900 dark:text-indigo-100 mb-2 flex items-center gap-2">
@@ -518,17 +587,30 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
             {/* Period Comparison Table */}
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Channel Summary by Period</h3>
+              <h3 className="text-lg font-semibold mb-4">Channel Summary by {aiPeriodType === 'month' ? 'Month' : aiPeriodType === 'quarter' ? 'Quarter' : 'Period'}</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-2 font-medium">Channel</th>
-                      {timeSeriesGroups[0]?.periods.map((p) => (
-                        <th key={p.period} className="text-right p-2 font-medium">
-                          Period {p.period}
-                        </th>
-                      ))}
+                      {timeSeriesGroups[0]?.periods.map((p, idx) => {
+                        let label: string
+                        if (aiPeriodLabels[idx]) {
+                          label = aiPeriodLabels[idx]
+                        } else if (aiPeriodType === 'month') {
+                          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                          label = monthNames[(p.period - 1) % 12] || `Month ${p.period}`
+                        } else if (aiPeriodType === 'quarter') {
+                          label = `Q${p.period}`
+                        } else {
+                          label = `Period ${p.period}`
+                        }
+                        return (
+                          <th key={p.period} className="text-right p-2 font-medium">
+                            {label}
+                          </th>
+                        )
+                      })}
                       <th className="text-right p-2 font-medium">Total</th>
                       <th className="text-right p-2 font-medium">Change</th>
                     </tr>
