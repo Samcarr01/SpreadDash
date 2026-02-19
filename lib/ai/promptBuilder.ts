@@ -11,7 +11,7 @@ export function buildSystemPrompt(): string {
   return `You are a senior data analyst reviewing a spreadsheet upload for an internal business team. You receive:
 1. Column metadata (names, types, sample values)
 2. Pre-computed statistics (KPIs, trends, correlations)
-3. A sample of the actual data (first 30 rows, last 10 rows)
+3. A sample of the actual data (first 50 rows, last 20 rows for large datasets)
 
 Your job is to provide actionable business intelligence:
 
@@ -46,12 +46,14 @@ Your job is to provide actionable business intelligence:
    - focusAreas: What should the team pay attention to? (2-3 areas)
    - chartSuggestion: What type of chart would best visualize this data?
    - periodType: If columns have _1, _2, _3 suffixes, what do they represent? (month/quarter/week/year/period)
-   - periodLabels: IMPORTANT - Provide human-readable date labels, NOT "Period 1", "Period 2" etc.
-     * If periodType is "month": Use month names like ["Jan", "Feb", "Mar", "Apr"] or ["January", "February", "March", "April"]
-     * If periodType is "quarter": Use ["Q1", "Q2", "Q3", "Q4"]
-     * If periodType is "week": Use ["Week 1", "Week 2", "Week 3"] or actual dates
-     * If you can infer the actual dates from context, use them (e.g., ["Jan 2024", "Feb 2024"])
-     * NEVER use generic labels like "Period 1", "Period 2" - these are meaningless to users
+   - periodLabels: CRITICAL - You MUST provide actual month names, NOT generic labels.
+     * Look at the column suffixes (e.g., Website_1, Website_2, Website_3, Website_4)
+     * The numbers represent sequential time periods - infer which months they are
+     * For 4-5 periods, assume recent months like ["February", "March", "April", "May"]
+     * For 12 periods, use ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+     * If quarterly data: ["Q1", "Q2", "Q3", "Q4"]
+     * FORBIDDEN: Never output "Period 1", "Period 2", "Period X" - these are useless
+     * When in doubt, use month names starting from January or the most recent months
 
 Rules:
 - Be SPECIFIC: reference actual column names, numbers, and percentages
@@ -68,10 +70,11 @@ Rules:
 export function buildUserPrompt(
   sheetMeta: SheetMeta,
   insightsResult: InsightsResult,
-  rawData: Record<string, unknown>[]
+  rawData: Record<string, unknown>[],
+  filename?: string
 ): string {
   // Prepare data sample with token budget management
-  let dataSample = prepareSample(rawData, sheetMeta, insightsResult)
+  const dataSample = prepareSample(rawData, sheetMeta, insightsResult)
 
   // Build the prompt
   const dateColumnName =
@@ -81,7 +84,7 @@ export function buildUserPrompt(
 
   const numericColumnNames = sheetMeta.numericColumnIndices
     .map((i) => sheetMeta.headers[i])
-    .slice(0, 10)
+    .slice(0, 15)
     .join(', ')
 
   const categoryColumnNames = sheetMeta.categoryColumnIndices
@@ -101,20 +104,35 @@ export function buildUserPrompt(
     .map((i) => `- [${i.severity.toUpperCase()}] ${i.title}: ${i.description}`)
     .join('\n') || 'No rule-based insights generated'
 
-  // Get first 30 and last 10 rows from sample
-  const firstRows = dataSample.slice(0, 30)
-  const lastRows = dataSample.slice(-10)
+  // Get first 50 and last 20 rows from sample for better context
+  const firstRows = dataSample.slice(0, 50)
+  const lastRows = dataSample.slice(-20)
 
   // Strip whitespace from JSON
   const firstRowsJSON = JSON.stringify(firstRows, null, 0)
   const lastRowsJSON = JSON.stringify(lastRows, null, 0)
 
+  // Detect time series columns for period inference
+  const timeSeriesInfo = detectTimeSeriesPattern(sheetMeta.headers)
+
+  // Extract date values from data if available
+  const dateValues = extractDateValues(rawData, sheetMeta)
+
+  // Calculate sampling info
+  const isSampled = rawData.length > dataSample.length
+  const samplingNote = isSampled
+    ? `\n\nNote: This is a representative sample of ${dataSample.length} rows from ${rawData.length.toLocaleString()} total rows.`
+    : ''
+
   return `## Dataset Overview
+- Filename: ${filename || 'Unknown'}
 - Total: ${sheetMeta.totalRows.toLocaleString()} rows × ${sheetMeta.totalColumns} columns
 - Columns: ${sheetMeta.headers.join(', ')}
 - Date column: ${dateColumnName}
 - Numeric columns: ${numericColumnNames || 'None'}
 - Category columns: ${categoryColumnNames || 'None'}
+${timeSeriesInfo}
+${dateValues}
 
 ## Pre-Computed KPIs (automated)
 ${kpiSummary}
@@ -128,10 +146,15 @@ ${insightsSummary}
 ## Data Sample (first ${firstRows.length} rows)
 ${firstRowsJSON}
 
-## Data Sample (last ${Math.min(lastRows.length, 10)} rows)
-${lastRowsJSON}
+## Data Sample (last ${Math.min(lastRows.length, 20)} rows)
+${lastRowsJSON}${samplingNote}
 
 ---
+
+CRITICAL REQUIREMENT FOR periodLabels:
+You MUST provide actual month names in periodLabels. Look at the column pattern (e.g., Website_1, Website_2, Website_3, Website_4).
+These numbers represent sequential time periods. Provide month names like ["February", "March", "April", "May"].
+NEVER output "Period 1", "Period 2", etc. - this is FORBIDDEN.
 
 Analyze this data and respond with valid JSON:
 {
@@ -169,7 +192,61 @@ Analyze this data and respond with valid JSON:
 }
 
 /**
+ * Detect time series column patterns like Channel_1, Channel_2
+ */
+function detectTimeSeriesPattern(headers: string[]): string {
+  const pattern = /^(.+?)_(\d+)$/
+  const groups: Map<string, number[]> = new Map()
+
+  headers.forEach((header) => {
+    const match = header.match(pattern)
+    if (!match) return
+
+    const baseName = match[1]
+    const period = parseInt(match[2], 10)
+
+    if (!groups.has(baseName)) {
+      groups.set(baseName, [])
+    }
+    groups.get(baseName)!.push(period)
+  })
+
+  if (groups.size === 0) return ''
+
+  const entries = Array.from(groups.entries())
+    .filter(([, periods]) => periods.length >= 2)
+    .map(([name, periods]) => `${name}: periods ${Math.min(...periods)}-${Math.max(...periods)}`)
+    .slice(0, 5)
+
+  if (entries.length === 0) return ''
+
+  return `- Time series columns detected: ${entries.join('; ')}`
+}
+
+/**
+ * Extract date values from data for period inference
+ */
+function extractDateValues(
+  rawData: Record<string, unknown>[],
+  sheetMeta: SheetMeta
+): string {
+  if (sheetMeta.dateColumnIndex === null) return ''
+
+  const dateColumn = sheetMeta.headers[sheetMeta.dateColumnIndex]
+  const dateValues = rawData
+    .slice(0, 10)
+    .map((row) => row[dateColumn])
+    .filter((v) => v !== null && v !== undefined && v !== '')
+    .slice(0, 5)
+
+  if (dateValues.length === 0) return ''
+
+  return `- Sample date values: ${dateValues.join(', ')}`
+}
+
+/**
  * Prepares data sample with token budget management
+ * Increased budget to 15,000 tokens (Haiku supports 200K input)
  */
 function prepareSample(
   rawData: Record<string, unknown>[],
@@ -179,7 +256,8 @@ function prepareSample(
   // Estimate: each row ~100 chars, ~25 tokens
   const estimatedTokens = rawData.length * sheetMeta.totalColumns * 5
 
-  if (estimatedTokens < 2500) {
+  // Increased from 2,500 to 15,000 tokens - Haiku can handle much more
+  if (estimatedTokens < 15000) {
     return rawData
   }
 
@@ -191,23 +269,23 @@ function prepareSample(
     columnsToKeep.add(sheetMeta.headers[sheetMeta.dateColumnIndex])
   }
 
-  // Keep first category column (often the key identifier)
-  if (sheetMeta.categoryColumnIndices.length > 0) {
-    columnsToKeep.add(sheetMeta.headers[sheetMeta.categoryColumnIndices[0]])
-  }
+  // Keep first two category columns (often key identifiers)
+  sheetMeta.categoryColumnIndices.slice(0, 2).forEach((idx) => {
+    columnsToKeep.add(sheetMeta.headers[idx])
+  })
 
-  // Keep top 5 numeric columns by absolute change percent
+  // Keep top 10 numeric columns by absolute change percent (up from 5)
   const sortedKPIs = [...insightsResult.kpis].sort(
     (a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent)
   )
 
-  sortedKPIs.slice(0, 5).forEach((kpi) => {
+  sortedKPIs.slice(0, 10).forEach((kpi) => {
     columnsToKeep.add(kpi.columnName)
   })
 
-  // If we don't have enough columns, add more numeric columns
-  if (columnsToKeep.size < 6) {
-    sheetMeta.numericColumnIndices.slice(0, 6).forEach((idx) => {
+  // If we don't have enough columns, add more numeric columns (up to 15)
+  if (columnsToKeep.size < 15) {
+    sheetMeta.numericColumnIndices.slice(0, 15).forEach((idx) => {
       columnsToKeep.add(sheetMeta.headers[idx])
     })
   }
@@ -223,10 +301,10 @@ function prepareSample(
     return filtered
   })
 
-  // Reduce to first 15 + last 5 rows
+  // Increased from 15+5 to 50+20 rows for better sampling
   const truncated = [
-    ...filteredData.slice(0, 15),
-    ...filteredData.slice(-5),
+    ...filteredData.slice(0, 50),
+    ...filteredData.slice(-20),
   ]
 
   return truncated

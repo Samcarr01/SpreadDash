@@ -39,7 +39,7 @@ export async function POST(
     // Fetch upload record to get data for analysis
     const { data: upload, error: fetchError } = await supabaseServer
       .from('uploads')
-      .select('sheet_meta, insights_data, raw_data')
+      .select('sheet_meta, insights_data, raw_data, filename')
       .eq('id', id)
       .single()
 
@@ -62,7 +62,8 @@ export async function POST(
     const aiAnalysis = await analyseWithAI(
       upload.sheet_meta,
       upload.insights_data,
-      upload.raw_data
+      upload.raw_data,
+      upload.filename
     )
 
     const aiStatus = aiAnalysis ? 'completed' : 'failed'

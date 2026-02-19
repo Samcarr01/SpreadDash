@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     let aiStatus: 'pending' | 'completed' | 'failed' | 'skipped' = 'pending'
 
     if (process.env.ANTHROPIC_API_KEY) {
-      aiAnalysis = await analyseWithAI(sheet_meta, insightsResult, raw_data)
+      aiAnalysis = await analyseWithAI(sheet_meta, insightsResult, raw_data, filename)
       aiStatus = aiAnalysis ? 'completed' : 'failed'
     } else {
       aiStatus = 'skipped'

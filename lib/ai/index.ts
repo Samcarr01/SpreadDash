@@ -34,12 +34,14 @@ if (!ANTHROPIC_API_KEY) {
  * @param sheetMeta - Sheet metadata
  * @param insightsResult - Pre-computed insights
  * @param rawData - Full dataset (will be sampled)
+ * @param filename - Original filename (optional, helps with period inference)
  * @returns AIAnalysisResult or null on any failure
  */
 export async function analyseWithAI(
   sheetMeta: SheetMeta,
   insightsResult: InsightsResult,
-  rawData: Record<string, unknown>[]
+  rawData: Record<string, unknown>[],
+  filename?: string
 ): Promise<AIAnalysisResult | null> {
   // Check if API key is configured
   if (!ANTHROPIC_API_KEY) {
@@ -50,7 +52,7 @@ export async function analyseWithAI(
   try {
     // Build prompts
     const systemPrompt = buildSystemPrompt()
-    const userPrompt = buildUserPrompt(sheetMeta, insightsResult, rawData)
+    const userPrompt = buildUserPrompt(sheetMeta, insightsResult, rawData, filename)
 
     // Initialize Anthropic client
     const client = new Anthropic({

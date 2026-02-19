@@ -63,17 +63,34 @@ function getRowLabelColumn(headers: string[], data: Record<string, unknown>[]) {
   return headers[0]
 }
 
-function getPeriodLabel(period: number, index: number, periodType: string, aiPeriodLabels: string[]) {
+function getPeriodLabel(period: number, index: number, periodType: string, aiPeriodLabels: string[], totalPeriods: number = 12) {
   if (aiPeriodLabels[index]) {
     return aiPeriodLabels[index]
   }
 
   if (periodType === 'month') {
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    return monthNames[(period - 1) % 12] || `Month ${period}`
+    // For datasets with <= 12 periods, assume recent months ending at current month
+    // For period numbers 1-12, map directly to months
+    if (period >= 1 && period <= 12) {
+      return monthNames[period - 1]
+    }
+    // For larger period numbers (e.g., multi-year data), include year context
+    const yearOffset = Math.floor((period - 1) / 12)
+    const monthIndex = (period - 1) % 12
+    if (yearOffset > 0) {
+      return `${monthNames[monthIndex]} Y${yearOffset + 1}`
+    }
+    return monthNames[monthIndex] || `Month ${period}`
   }
 
   if (periodType === 'quarter') {
+    // Support multi-year quarters
+    if (period > 4) {
+      const yearOffset = Math.floor((period - 1) / 4)
+      const quarterNum = ((period - 1) % 4) + 1
+      return `Q${quarterNum} Y${yearOffset + 1}`
+    }
     return `Q${period}`
   }
 
@@ -83,6 +100,13 @@ function getPeriodLabel(period: number, index: number, periodType: string, aiPer
 
   if (periodType === 'year') {
     return String(period)
+  }
+
+  // Default fallback: assume monthly if we don't have a period type
+  // This is better than "Period X" which is meaningless
+  if (period >= 1 && period <= 12) {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return monthNames[period - 1]
   }
 
   return `Period ${period}`
@@ -107,7 +131,14 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
   const aiPeriodLabels = useMemo(() => {
     const labels = upload.ai_analysis?.displayRecommendations?.periodLabels || []
-    return labels.some((label) => /^Period\s*\d+$/i.test(label)) ? [] : labels
+    // Filter out individual bad labels instead of rejecting all if any are bad
+    return labels.map((label) => {
+      // Check for generic "Period X" patterns - these are useless
+      if (/^Period\s*\d+$/i.test(label)) return null
+      // Check for empty or whitespace-only labels
+      if (!label || !label.trim()) return null
+      return label
+    }).filter((label): label is string => label !== null)
   }, [upload.ai_analysis])
 
   const aiPeriodType = useMemo(
