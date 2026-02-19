@@ -133,8 +133,8 @@ export const AIAnalysisResultSchema = z.object({
   // AI recommendations for what to display
   displayRecommendations: z.object({
     topMetrics: z.array(z.string()).max(6).optional(), // Most important metrics to highlight
-    focusAreas: z.array(z.string().max(100)).max(3).optional(), // What to focus on
-    chartSuggestion: z.string().max(200).optional(), // What chart would be most useful
+    focusAreas: z.array(z.string().max(150)).max(3).optional(), // What to focus on
+    chartSuggestion: z.string().max(500).optional(), // What chart would be most useful
     periodType: z.enum(['month', 'quarter', 'week', 'year', 'period', 'unknown']).optional(), // What the _1, _2, _3 represents
     periodLabels: z.array(z.string()).max(12).optional(), // Human-friendly labels like ["Jan", "Feb", "Mar"] or ["Q1", "Q2"]
   }).optional(),
