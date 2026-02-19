@@ -11,7 +11,7 @@ import { buildSystemPrompt, buildUserPrompt } from './promptBuilder'
 import { parseAIResponse } from './responseParser'
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
-const AI_TIMEOUT_MS = 15000 // 15 seconds
+const AI_TIMEOUT_MS = 30000 // 30 seconds
 const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
 
 // Warn once at module load if API key is missing
@@ -105,7 +105,7 @@ export async function analyseWithAI(
     // Handle specific error types
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        console.error('[AI Analysis] Request timeout after 15 seconds')
+        console.error('[AI Analysis] Request timeout after 30 seconds')
       } else if (error.message.includes('rate_limit')) {
         console.error('[AI Analysis] Rate limit exceeded')
       } else if (error.message.includes('api_key')) {
