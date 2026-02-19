@@ -140,6 +140,76 @@ function getInsightTone(severity: string) {
   return 'border-sky-500/40 bg-sky-500/10'
 }
 
+/**
+ * Detect if data is "transposed" - rows are categories, columns are time periods
+ * This happens when:
+ * 1. There's only ONE time-series group (e.g., all columns are Column_A, Column_B, Column_C)
+ * 2. The first column contains text labels (category names)
+ * 3. There are multiple data rows
+ */
+function detectTransposedData(
+  timeSeriesGroups: { baseName: string; periods: { period: number; column: string }[] }[],
+  headers: string[],
+  data: Record<string, unknown>[],
+  labelColumn: string
+): boolean {
+  // Must have exactly one time-series group
+  if (timeSeriesGroups.length !== 1) return false
+
+  // The group should have multiple periods (columns)
+  const group = timeSeriesGroups[0]
+  if (group.periods.length < 3) return false
+
+  // Check if base name is generic (like "Column")
+  const isGenericBaseName = /^(column|col|field|data|value)s?$/i.test(group.baseName)
+  if (!isGenericBaseName) return false
+
+  // Must have a valid label column with text values
+  if (!labelColumn) return false
+
+  // Check that most rows have text labels (not numbers)
+  const textLabelCount = data.filter(row => {
+    const label = row[labelColumn]
+    return typeof label === 'string' && label.trim() !== '' && isNaN(parseFloat(label))
+  }).length
+
+  // At least 50% of rows should have text labels
+  return textLabelCount > data.length * 0.5
+}
+
+/**
+ * Get clean row labels for transposed data, filtering out title/summary rows
+ */
+function getCleanRowLabels(
+  data: Record<string, unknown>[],
+  labelColumn: string,
+  timeSeriesGroup: { periods: { period: number; column: string }[] }
+): { label: string; rowIndex: number }[] {
+  const results: { label: string; rowIndex: number }[] = []
+
+  data.forEach((row, index) => {
+    const label = row[labelColumn]
+    if (typeof label !== 'string' || label.trim() === '') return
+
+    // Skip rows that look like titles or headers (mostly empty numeric columns)
+    const numericValues = timeSeriesGroup.periods.filter(({ column }) => {
+      const val = row[column]
+      return val !== null && val !== undefined && !isNaN(parseFloat(String(val)))
+    })
+
+    // Row should have at least 30% of columns with numeric data
+    if (numericValues.length < timeSeriesGroup.periods.length * 0.3) return
+
+    // Skip if label looks like a header/title (all caps, contains "total" at start, etc.)
+    const cleanLabel = label.trim()
+    if (cleanLabel.toUpperCase() === cleanLabel && cleanLabel.length > 10) return
+
+    results.push({ label: cleanLabel, rowIndex: index })
+  })
+
+  return results
+}
+
 export default function DashboardTabs({ upload }: DashboardTabsProps) {
   const timeSeriesGroups = useMemo(() => detectTimeSeriesColumns(upload.sheet_meta.headers), [upload.sheet_meta.headers])
 
@@ -147,6 +217,18 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
     () => getRowLabelColumn(upload.sheet_meta.headers, upload.raw_data),
     [upload.sheet_meta.headers, upload.raw_data]
   )
+
+  // Detect if data is transposed (rows = categories, columns = time periods)
+  const isTransposed = useMemo(
+    () => detectTransposedData(timeSeriesGroups, upload.sheet_meta.headers, upload.raw_data, labelColumn),
+    [timeSeriesGroups, upload.sheet_meta.headers, upload.raw_data, labelColumn]
+  )
+
+  // Get row labels for transposed data
+  const transposedRowLabels = useMemo(() => {
+    if (!isTransposed || timeSeriesGroups.length === 0) return []
+    return getCleanRowLabels(upload.raw_data, labelColumn, timeSeriesGroups[0])
+  }, [isTransposed, upload.raw_data, labelColumn, timeSeriesGroups])
 
   const aiTopMetrics = useMemo(() => upload.ai_analysis?.displayRecommendations?.topMetrics || [], [upload.ai_analysis])
 
@@ -207,9 +289,43 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
     [allSortedPeriods, aiPeriodType, aiPeriodLabels]
   )
 
+  // For transposed data: series names are row labels, not column group names
+  const transposedSeriesNames = useMemo(() => {
+    if (!isTransposed) return []
+    return transposedRowLabels.slice(0, CHART_MAX_VISIBLE_SERIES).map(r => r.label)
+  }, [isTransposed, transposedRowLabels])
+
   const channelMetrics = useMemo<ChannelMetric[]>(() => {
     if (sortedGroups.length === 0) return []
 
+    // For transposed data: each ROW is a channel/metric
+    if (isTransposed && transposedRowLabels.length > 0) {
+      const group = sortedGroups[0]
+      return transposedRowLabels.slice(0, 8).map(({ label, rowIndex }) => {
+        const row = upload.raw_data[rowIndex]
+        const periodTotals: { period: number; total: number }[] = []
+
+        group.periods.forEach(({ period, column }) => {
+          const value = parseFloat(String(row[column]))
+          periodTotals.push({ period, total: isNaN(value) ? 0 : value })
+        })
+
+        const latestTotal = periodTotals[periodTotals.length - 1]?.total || 0
+        const previousTotal = periodTotals[periodTotals.length - 2]?.total || 0
+        const change = previousTotal > 0 ? ((latestTotal - previousTotal) / previousTotal) * 100 : 0
+
+        return {
+          name: label,
+          currentValue: latestTotal,
+          previousValue: previousTotal,
+          change,
+          trend: change > 5 ? 'up' : change < -5 ? 'down' : 'flat',
+          sparkline: periodTotals.map((item) => item.total),
+        }
+      })
+    }
+
+    // Normal data: each COLUMN GROUP is a channel/metric
     return sortedGroups.slice(0, 8).map((group) => {
       const periodTotals: { period: number; total: number }[] = []
 
@@ -236,11 +352,32 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
         sparkline: periodTotals.map((item) => item.total),
       }
     })
-  }, [sortedGroups, upload.raw_data])
+  }, [sortedGroups, upload.raw_data, isTransposed, transposedRowLabels])
 
   const trendChartData = useMemo(() => {
     if (visibleSeriesGroups.length === 0) return []
 
+    // For transposed data: each row is a series, columns are periods
+    if (isTransposed && transposedRowLabels.length > 0) {
+      const group = visibleSeriesGroups[0]
+      const visibleRows = transposedRowLabels.slice(0, CHART_MAX_VISIBLE_SERIES)
+
+      return group.periods.map(({ period, column }, index) => {
+        const point: Record<string, unknown> = {
+          period: getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels),
+        }
+
+        visibleRows.forEach(({ label, rowIndex }) => {
+          const row = upload.raw_data[rowIndex]
+          const value = parseFloat(String(row[column]))
+          point[label] = isNaN(value) ? 0 : value
+        })
+
+        return point
+      })
+    }
+
+    // Normal data: each column group is a series
     return allSortedPeriods.map((period, index) => {
       const point: Record<string, unknown> = {
         period: getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels),
@@ -261,11 +398,32 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
       return point
     })
-  }, [visibleSeriesGroups, allSortedPeriods, aiPeriodType, aiPeriodLabels, upload.raw_data])
+  }, [visibleSeriesGroups, allSortedPeriods, aiPeriodType, aiPeriodLabels, upload.raw_data, isTransposed, transposedRowLabels])
 
   const activityChartData = useMemo(() => {
     if (!labelColumn || visibleSeriesGroups.length === 0) return []
 
+    // For transposed data: show periods on X-axis, rows as series (same as trendChartData)
+    if (isTransposed && transposedRowLabels.length > 0) {
+      const group = visibleSeriesGroups[0]
+      const rowsToShow = transposedRowLabels.slice(0, 3)
+
+      return group.periods.slice(0, 12).map(({ period, column }, index) => {
+        const point: Record<string, unknown> = {
+          name: getPeriodLabel(period, index, aiPeriodType, aiPeriodLabels).slice(0, 24),
+        }
+
+        rowsToShow.forEach(({ label, rowIndex }) => {
+          const row = upload.raw_data[rowIndex]
+          const value = parseFloat(String(row[column]))
+          point[label] = isNaN(value) ? 0 : value
+        })
+
+        return point
+      })
+    }
+
+    // Normal data: show rows on X-axis, column groups as series
     const channelsToShow = visibleSeriesGroups.slice(0, 3)
 
     return upload.raw_data.slice(0, 12).map((row) => {
@@ -284,7 +442,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
       return point
     })
-  }, [labelColumn, visibleSeriesGroups, upload.raw_data])
+  }, [labelColumn, visibleSeriesGroups, upload.raw_data, isTransposed, transposedRowLabels, aiPeriodType, aiPeriodLabels])
 
   const numericSummaryData = useMemo(() => {
     return upload.sheet_meta.numericColumnIndices.slice(0, 8).map((columnIndex) => {
@@ -321,7 +479,9 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
       <TabsContent value="overview" className="mt-6 space-y-6">
         <OverviewHeader
           rowCount={upload.row_count}
-          channelCount={hasTimeSeriesData ? sortedGroups.length : upload.column_count}
+          channelCount={hasTimeSeriesData
+            ? (isTransposed ? transposedRowLabels.length : sortedGroups.length)
+            : upload.column_count}
           periodCount={hasTimeSeriesData ? visibleSeriesGroups[0]?.periods.length || 0 : null}
           uploadedAt={upload.uploaded_at}
           focusAreas={upload.ai_analysis?.displayRecommendations?.focusAreas || []}
@@ -330,14 +490,14 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
         {hasTimeSeriesData ? (
           <>
             <PrimaryTrendPanel
-              title="Channel Trends Over Time"
+              title={isTransposed ? "Category Trends Over Time" : "Channel Trends Over Time"}
               caption={upload.ai_analysis?.displayRecommendations?.chartSuggestion || summarySnippet}
               data={trendChartData}
               xAxisKey="period"
-              seriesKeys={visibleSeriesGroups.map((group) => group.baseName)}
+              seriesKeys={isTransposed ? transposedSeriesNames : visibleSeriesGroups.map((group) => group.baseName)}
             />
 
-            <ChannelGrid metrics={channelMetrics} title="Channel Health" />
+            <ChannelGrid metrics={channelMetrics} title={isTransposed ? "Category Performance" : "Channel Health"} />
           </>
         ) : (
           <Card className="surface-panel p-6">
@@ -388,17 +548,21 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
           <>
             <PrimaryTrendPanel
               title="Primary Trend Analysis"
-              caption="Compare leading channel movements across the selected periods."
+              caption={isTransposed
+                ? "Compare category performance across time periods."
+                : "Compare leading channel movements across the selected periods."}
               data={trendChartData}
               xAxisKey="period"
-              seriesKeys={visibleSeriesGroups.map((group) => group.baseName)}
+              seriesKeys={isTransposed ? transposedSeriesNames : visibleSeriesGroups.map((group) => group.baseName)}
             />
 
             <SecondaryCharts
               trendData={trendChartData}
-              trendSeries={visibleSeriesGroups.map((group) => group.baseName)}
+              trendSeries={isTransposed ? transposedSeriesNames : visibleSeriesGroups.map((group) => group.baseName)}
               activityData={activityChartData}
-              activitySeries={visibleSeriesGroups.slice(0, 3).map((group) => group.baseName)}
+              activitySeries={isTransposed
+                ? transposedRowLabels.slice(0, 3).map(r => r.label)
+                : visibleSeriesGroups.slice(0, 3).map((group) => group.baseName)}
             />
 
             <SummaryTable

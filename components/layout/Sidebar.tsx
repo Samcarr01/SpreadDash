@@ -193,12 +193,12 @@ export default function Sidebar({ uploads }: SidebarProps) {
                       </div>
                     </Link>
 
-                    <div className="mt-2 flex justify-end">
+                    <div className="mt-2">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         aria-label={`Delete ${upload.label || upload.filename}`}
-                        className="h-7 px-2 text-xs font-medium text-destructive hover:text-destructive"
+                        className="h-7 w-full justify-center border-destructive/40 bg-destructive/10 text-xs font-medium text-destructive hover:bg-destructive/15 hover:text-destructive"
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
