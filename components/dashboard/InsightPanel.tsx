@@ -38,7 +38,7 @@ function InsightCard({ insight }: { insight: Insight }) {
   const { icon: Icon, color, bgColor } = getInsightStyle(insight.severity)
 
   return (
-    <Card className="p-4">
+    <Card className="surface-card p-4">
       <div className="flex gap-3">
         {/* Icon */}
         <div className={`flex-shrink-0 w-10 h-10 rounded-full ${bgColor} flex items-center justify-center`}>
@@ -77,25 +77,25 @@ function getInsightStyle(severity: Insight['severity']) {
       return {
         icon: CheckCircle2,
         color: 'text-green-600 dark:text-green-500',
-        bgColor: 'bg-green-50 dark:bg-green-950',
+        bgColor: 'bg-green-500/10',
       }
     case 'negative':
       return {
         icon: XCircle,
         color: 'text-red-600 dark:text-red-500',
-        bgColor: 'bg-red-50 dark:bg-red-950',
+        bgColor: 'bg-red-500/10',
       }
     case 'warning':
       return {
         icon: AlertTriangle,
         color: 'text-yellow-600 dark:text-yellow-500',
-        bgColor: 'bg-yellow-50 dark:bg-yellow-950',
+        bgColor: 'bg-yellow-500/10',
       }
     case 'info':
       return {
         icon: Info,
         color: 'text-blue-600 dark:text-blue-500',
-        bgColor: 'bg-blue-50 dark:bg-blue-950',
+        bgColor: 'bg-blue-500/10',
       }
   }
 }

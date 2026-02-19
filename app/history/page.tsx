@@ -56,7 +56,13 @@ export default async function HistoryPage() {
     <div>
       <TopBar title="Upload History" />
 
-      <div className="p-4 md:p-6">
+      <div className="space-y-4 p-4 md:p-6">
+        <div className="surface-card p-4">
+          <p className="text-label">
+            Review previously uploaded files, inspect AI status, and manage exports safely.
+          </p>
+        </div>
+
         {uploads.length === 0 ? (
           <div className="surface-panel py-12 text-center">
             <p className="text-muted-foreground">No uploads yet</p>

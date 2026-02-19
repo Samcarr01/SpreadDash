@@ -101,14 +101,14 @@ export default function Sidebar({ uploads }: SidebarProps) {
   )
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-background/75 backdrop-blur-md">
+    <div className="flex h-full flex-col bg-[hsl(var(--bg-surface)/0.95)] backdrop-blur-sm">
       {/* Header */}
       <div className="border-b border-border/70 p-4">
         <div className="flex items-center justify-between mb-4">
           <Link href="/dashboard">
             <div>
               <p className="kicker">Workspace</p>
-              <h1 className="font-display text-2xl font-semibold">SpreadDash</h1>
+              <h1 className="font-display text-[28px] font-semibold leading-none">SpreadDash</h1>
             </div>
           </Link>
           <Button
@@ -123,7 +123,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
 
         {/* New Upload Button */}
         <Link href="/dashboard">
-          <Button className="h-10 w-full font-semibold">
+          <Button className="h-10 w-full justify-center font-semibold shadow-sm">
             <Upload className="h-4 w-4 mr-2" />
             New Upload
           </Button>
@@ -138,7 +138,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
             placeholder="Search uploads..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-10 border-border/70 bg-background/80 pl-9"
+            className="h-10 border-border/80 bg-[hsl(var(--bg-raised)/0.9)] pl-9 text-[13px]"
           />
         </div>
       </div>
@@ -157,10 +157,10 @@ export default function Sidebar({ uploads }: SidebarProps) {
                 return (
                   <div
                     key={upload.id}
-                    className={`group relative rounded-xl border p-3 transition-all ${
+                    className={`group relative rounded-xl border p-3 transition-colors ${
                       isActive
-                        ? 'border-primary/50 bg-primary text-primary-foreground shadow-sm'
-                        : 'border-transparent hover:border-border hover:bg-card/80'
+                        ? 'border-primary/40 bg-[hsl(var(--bg-raised))] text-foreground'
+                        : 'border-transparent hover:border-border/80 hover:bg-[hsl(var(--bg-raised)/0.78)]'
                     }`}
                   >
                     <Link
@@ -171,7 +171,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
                       <div className="flex items-start gap-2 pr-8">
                         <FileSpreadsheet
                           className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
-                            isActive ? 'text-primary-foreground' : 'text-muted-foreground'
+                            isActive ? 'text-primary' : 'text-muted-foreground'
                           }`}
                         />
                         <div className="flex-1 min-w-0">
@@ -181,7 +181,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
                           <p
                             className={`text-xs truncate ${
                               isActive
-                                ? 'text-primary-foreground/80'
+                                ? 'text-muted-foreground'
                                 : 'text-muted-foreground'
                             }`}
                           >
@@ -197,7 +197,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
                           <div className="flex gap-1 mt-1">
                             <Badge
                               variant={isActive ? 'outline' : 'secondary'}
-                              className="text-xs"
+                              className="text-xs font-medium"
                             >
                               {upload.row_count} rows
                             </Badge>
@@ -213,7 +213,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
                           variant="ghost"
                           size="icon"
                           className={`absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 ${
-                            isActive ? 'hover:bg-primary-foreground/20' : ''
+                            isActive ? 'hover:bg-muted/80' : ''
                           }`}
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -284,7 +284,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
       <Button
         variant="secondary"
         size="icon"
-        className="fixed left-4 top-4 z-50 border border-border/70 shadow-sm md:hidden"
+        className="fixed left-4 top-4 z-50 border border-border/70 bg-[hsl(var(--bg-raised))] shadow-sm md:hidden"
         onClick={() => setIsMobileOpen(true)}
       >
         <Menu className="h-5 w-5" />

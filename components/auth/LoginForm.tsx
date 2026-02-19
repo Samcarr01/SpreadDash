@@ -50,16 +50,16 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="surface-card w-full max-w-md border-border/70">
-      <CardHeader>
+    <Card className="surface-card w-full max-w-md border-border/70 bg-[hsl(var(--bg-surface)/0.96)]">
+      <CardHeader className="space-y-3 pb-2">
         <p className="kicker text-center">Secure Team Access</p>
-        <CardTitle className="text-center text-3xl font-semibold">Enter Workspace</CardTitle>
-        <p className="text-center text-sm text-muted-foreground">
-          Use your shared access code to open the dashboard.
+        <CardTitle className="text-center text-3xl font-semibold">Sign In</CardTitle>
+        <p className="text-center text-[13px] leading-6 text-muted-foreground">
+          Enter your workspace access code to continue.
         </p>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent className="space-y-2 pb-7">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="code" className="text-xs uppercase tracking-wider text-muted-foreground">
               Access Code
@@ -73,7 +73,7 @@ export default function LoginForm() {
               onChange={(e) => setCode(e.target.value)}
               disabled={isLoading}
               required
-              className="h-11 border-border/70 bg-background/80"
+              className="h-11 border-border/70 bg-[hsl(var(--bg-raised)/0.85)] text-[15px]"
             />
           </div>
 

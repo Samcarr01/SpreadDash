@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Download, Loader2, ExternalLink } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -92,26 +91,27 @@ export default function TopBar({
   }
 
   return (
-    <div className="sticky top-0 z-10 border-b bg-background/85 backdrop-blur-md">
+    <div className="topbar-shell sticky top-0 z-10 border-b border-border/70 backdrop-blur-md">
       <div className="flex items-center justify-between gap-4 p-4 pl-16 md:px-6 md:pl-6">
         <div className="min-w-0">
           {breadcrumb && (
             <p className="kicker mb-1">{breadcrumb}</p>
           )}
           <h1 className="truncate text-2xl font-semibold md:text-3xl">{title}</h1>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-label">
             Spreadsheet analytics, trend monitoring, and export reporting.
           </p>
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2">
-          <Badge variant="secondary" className="hidden md:inline-flex">
-            Live View
-          </Badge>
           <ThemeToggle />
 
           {showExport && (
-            <Button onClick={handleExport} disabled={isExporting} className="font-semibold">
+            <Button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="h-10 min-w-[126px] font-semibold"
+            >
               {isExporting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

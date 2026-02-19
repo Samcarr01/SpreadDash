@@ -55,6 +55,9 @@ async function getUploads(): Promise<UploadSummary[]> {
 
 export default async function DashboardPage() {
   const uploads = await getUploads()
+  const completedAI = uploads.filter((upload) => upload.ai_status === 'completed').length
+  const failedAI = uploads.filter((upload) => upload.ai_status === 'failed').length
+  const latestUpload = uploads[0]?.uploaded_at
 
   return (
     <div>
@@ -65,6 +68,35 @@ export default async function DashboardPage() {
         <section>
           <h2 className="mb-4 text-2xl font-semibold">Upload New Spreadsheet</h2>
           <DropZone />
+        </section>
+
+        <section>
+          <h2 className="mb-4 text-2xl font-semibold">Quick Status</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Card className="surface-card p-4">
+              <p className="text-label">Saved Dashboards</p>
+              <p className="mt-1 text-3xl font-semibold">{uploads.length}</p>
+            </Card>
+            <Card className="surface-card p-4">
+              <p className="text-label">AI Analyses Completed</p>
+              <p className="mt-1 text-3xl font-semibold">{completedAI}</p>
+              {failedAI > 0 && (
+                <p className="mt-1 text-xs text-destructive">{failedAI} failed and can be regenerated</p>
+              )}
+            </Card>
+            <Card className="surface-card p-4">
+              <p className="text-label">Latest Upload</p>
+              <p className="mt-1 text-sm font-medium text-foreground">
+                {latestUpload
+                  ? new Date(latestUpload).toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : 'No uploads yet'}
+              </p>
+            </Card>
+          </div>
         </section>
 
         {/* Recent Uploads */}

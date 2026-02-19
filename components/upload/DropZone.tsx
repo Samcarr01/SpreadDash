@@ -156,14 +156,25 @@ export default function DropZone() {
         <p className="mt-1 text-sm text-muted-foreground">
           Drag and drop a file or browse from your computer. We support CSV and Excel up to 25 MB.
         </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="rounded-md border border-border/70 bg-[hsl(var(--bg-raised)/0.8)] px-2 py-1 text-[11px] font-medium text-muted-foreground">
+            Step 1: Select file
+          </span>
+          <span className="rounded-md border border-border/70 bg-[hsl(var(--bg-raised)/0.8)] px-2 py-1 text-[11px] font-medium text-muted-foreground">
+            Step 2: Parse and analyze
+          </span>
+          <span className="rounded-md border border-border/70 bg-[hsl(var(--bg-raised)/0.8)] px-2 py-1 text-[11px] font-medium text-muted-foreground">
+            Step 3: Review dashboard
+          </span>
+        </div>
       </div>
 
       {/* Drop Zone */}
       <div
         className={`rounded-xl border-2 border-dashed p-10 text-center transition-colors md:p-12 ${
           isDragging
-            ? 'border-primary bg-primary/5'
-            : 'border-border hover:border-primary/60 hover:bg-primary/5'
+            ? 'border-primary bg-primary/8'
+            : 'border-border/80 hover:border-primary/55 hover:bg-primary/5'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -249,10 +260,10 @@ export default function DropZone() {
 
       {/* Error */}
       {error && (
-        <div className="mt-4 p-3 bg-destructive/10 border border-destructive rounded-md flex items-start gap-2">
+        <div className="mt-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3">
           <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium text-destructive">Error</p>
+            <p className="text-sm font-semibold text-destructive">Upload blocked</p>
             <p className="text-sm text-destructive/90">{error}</p>
             {uploadStatus === 'error' && (
               <Button

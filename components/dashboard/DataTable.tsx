@@ -103,7 +103,7 @@ export default function DataTable({ data, headers }: DataTableProps) {
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="surface-panel flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+      <div className="surface-panel sticky top-0 z-[5] flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
         <Input
           placeholder="Search all columns..."
           value={searchTerm}
@@ -111,7 +111,7 @@ export default function DataTable({ data, headers }: DataTableProps) {
             setSearchTerm(e.target.value)
             setCurrentPage(1)
           }}
-          className="max-w-sm border-border/70 bg-background/80"
+          className="h-10 max-w-sm border-border/80 bg-[hsl(var(--bg-raised)/0.85)]"
         />
 
         <DropdownMenu>
@@ -137,9 +137,9 @@ export default function DataTable({ data, headers }: DataTableProps) {
 
       {/* Table */}
       <div className="surface-panel overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="max-h-[62vh] overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-[2] bg-[hsl(var(--bg-surface)/0.98)] backdrop-blur-sm">
               <TableRow>
                 {visibleHeaders.map((header) => (
                   <TableHead
@@ -175,7 +175,10 @@ export default function DataTable({ data, headers }: DataTableProps) {
                 </TableRow>
               ) : (
                 paginatedData.map((row, rowIndex) => (
-                  <TableRow key={rowIndex}>
+                  <TableRow
+                    key={rowIndex}
+                    className={rowIndex % 2 === 1 ? 'bg-[hsl(var(--bg-raised)/0.45)]' : ''}
+                  >
                     {visibleHeaders.map((header) => (
                       <TableCell key={header}>
                         {formatCellValue(row[header])}

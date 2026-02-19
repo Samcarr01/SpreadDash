@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { UploadSummary } from '@/types'
 import Link from 'next/link'
-import { ExternalLink, Eye, Trash2 } from 'lucide-react'
+import { Download, Eye, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 interface HistoryTableProps {
@@ -98,7 +98,7 @@ export default function HistoryTable({ uploads }: HistoryTableProps) {
 
       <div className="surface-panel overflow-hidden">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-[hsl(var(--bg-surface)/0.96)]">
             <TableRow>
               <TableHead>Label</TableHead>
               <TableHead>Filename</TableHead>
@@ -111,8 +111,11 @@ export default function HistoryTable({ uploads }: HistoryTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {uploads.map((upload) => (
-              <TableRow key={upload.id}>
+            {uploads.map((upload, index) => (
+              <TableRow
+                key={upload.id}
+                className={index % 2 === 1 ? 'bg-[hsl(var(--bg-raised)/0.4)]' : ''}
+              >
                 <TableCell className="font-medium">
                   {upload.label || '—'}
                 </TableCell>
@@ -136,15 +139,13 @@ export default function HistoryTable({ uploads }: HistoryTableProps) {
                 <TableCell>
                   <Badge
                     variant={
-                      upload.ai_status === 'completed'
-                        ? 'default'
-                        : upload.ai_status === 'failed'
+                      upload.ai_status === 'failed'
                         ? 'destructive'
-                        : upload.ai_status === 'pending'
+                        : upload.ai_status === 'completed'
                         ? 'secondary'
                         : 'outline'
                     }
-                    className="text-xs"
+                    className="text-xs font-medium"
                   >
                     {upload.ai_status === 'completed'
                       ? 'Completed'
@@ -158,9 +159,8 @@ export default function HistoryTable({ uploads }: HistoryTableProps) {
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
                     <Link href={`/dashboard/${upload.id}`}>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
+                      <Button variant="ghost" size="icon" aria-label="View upload">
+                        <Eye className="h-4 w-4" />
                       </Button>
                     </Link>
                     <a
@@ -168,15 +168,15 @@ export default function HistoryTable({ uploads }: HistoryTableProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <Button variant="ghost" size="sm">
-                        <ExternalLink className="h-4 w-4 mr-1" />
-                        Download
+                      <Button variant="ghost" size="icon" aria-label="Download source file">
+                        <Download className="h-4 w-4" />
                       </Button>
                     </a>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       className="text-destructive hover:text-destructive"
+                      aria-label="Delete upload"
                       onClick={() => setDeleteTarget(upload)}
                     >
                       <Trash2 className="h-4 w-4" />

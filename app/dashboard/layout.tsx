@@ -63,7 +63,7 @@ export default async function DashboardLayout({
   const uploads = await getUploads()
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-[hsl(var(--bg-canvas))]">
       <Sidebar uploads={uploads} />
       <main className="flex-1 overflow-y-auto">
         {children}

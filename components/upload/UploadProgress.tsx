@@ -12,6 +12,9 @@ export default function UploadProgress({
   progress,
   filename,
 }: UploadProgressProps) {
+  const steps = ['uploading', 'parsing', 'analysing', 'complete'] as const
+  const activeIndex = steps.indexOf(status)
+
   const statusMessages = {
     uploading: 'Uploading file...',
     parsing: 'Parsing spreadsheet...',
@@ -36,6 +39,24 @@ export default function UploadProgress({
       </div>
 
       <Progress value={progress} className="h-2" />
+
+      <div className="grid grid-cols-4 gap-2">
+        {steps.map((step, index) => (
+          <div
+            key={step}
+            className={`rounded-md border px-2 py-1 text-center text-[11px] font-medium ${
+              index <= activeIndex
+                ? 'border-primary/40 bg-primary/10 text-primary'
+                : 'border-border/70 bg-[hsl(var(--bg-raised)/0.7)] text-muted-foreground'
+            }`}
+          >
+            {step === 'uploading' && 'Upload'}
+            {step === 'parsing' && 'Parse'}
+            {step === 'analysing' && 'Analyze'}
+            {step === 'complete' && 'Done'}
+          </div>
+        ))}
+      </div>
 
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>{progress}%</span>

@@ -228,12 +228,14 @@ export interface ChartConfig {
 }
 
 export const CHART_COLOURS = [
-  '#2563eb', // blue-600
-  '#16a34a', // green-600
-  '#ea580c', // orange-600
-  '#9333ea', // purple-600
-  '#e11d48', // rose-600
-  '#0891b2', // cyan-600
+  '#56B4E9',
+  '#E69F00',
+  '#009E73',
+  '#F0E442',
+  '#0072B2',
+  '#D55E00',
+  '#CC79A7',
+  '#999999',
 ] as const;
 
 export const TREND_COLOURS = {

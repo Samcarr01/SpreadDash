@@ -51,14 +51,14 @@ export default function AISummaryCard({
   // Failed or skipped state
   if (aiStatus === 'failed' || aiStatus === 'skipped' || !aiAnalysis) {
     return (
-      <Card className="surface-panel border-yellow-300/60 bg-yellow-50/80 p-6 dark:border-yellow-900 dark:bg-yellow-950/20">
+      <Card className="surface-panel border-border/80 bg-[hsl(var(--bg-raised)/0.82)] p-6">
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+            <h3 className="mb-1 text-sm font-semibold text-foreground">
               AI Analysis Unavailable
             </h3>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            <p className="text-sm text-muted-foreground">
               {aiStatus === 'skipped'
                 ? 'AI analysis is not configured for this instance.'
                 : 'AI analysis failed to generate. The rule-based insights below are still available.'}
@@ -105,7 +105,7 @@ export default function AISummaryCard({
 
       {/* Key Takeaways */}
       {aiAnalysis.keyTakeaways && aiAnalysis.keyTakeaways.length > 0 && (
-        <div className="mb-6 rounded-lg bg-primary/10 p-4">
+        <div className="mb-6 rounded-lg border border-border/70 bg-[hsl(var(--bg-raised)/0.72)] p-4">
           <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary">
             <TrendingUp className="h-4 w-4" />
             Key Takeaways
@@ -145,16 +145,16 @@ export default function AISummaryCard({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* Quick Wins */}
           {aiAnalysis.quickWins && aiAnalysis.quickWins.length > 0 && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
-              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-green-800 dark:text-green-200">
+            <div className="rounded-lg border border-border/70 bg-[hsl(var(--bg-raised)/0.72)] p-4">
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-foreground">
                 <Zap className="h-4 w-4" />
                 Quick Wins
               </h4>
               <ul className="space-y-2">
                 {aiAnalysis.quickWins.map((win, index) => (
                   <li key={index} className="flex gap-2 text-sm">
-                    <span className="text-green-600 dark:text-green-400">→</span>
-                    <span className="text-green-700 dark:text-green-300">{win}</span>
+                    <span className="text-primary">→</span>
+                    <span className="text-muted-foreground">{win}</span>
                   </li>
                 ))}
               </ul>
@@ -163,16 +163,16 @@ export default function AISummaryCard({
 
           {/* Next Steps */}
           {aiAnalysis.nextSteps && aiAnalysis.nextSteps.length > 0 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-              <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+            <div className="rounded-lg border border-border/70 bg-[hsl(var(--bg-raised)/0.72)] p-4">
+              <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
                 <ArrowRight className="h-4 w-4" />
                 Next Steps
               </h4>
               <ul className="space-y-2">
                 {aiAnalysis.nextSteps.map((step, index) => (
                   <li key={index} className="flex gap-2 text-sm">
-                    <span className="font-medium text-amber-700 dark:text-amber-300">{index + 1}.</span>
-                    <span className="text-amber-800 dark:text-amber-200">{step}</span>
+                    <span className="font-medium text-primary">{index + 1}.</span>
+                    <span className="text-muted-foreground">{step}</span>
                   </li>
                 ))}
               </ul>
