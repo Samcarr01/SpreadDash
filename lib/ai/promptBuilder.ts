@@ -192,30 +192,52 @@ Analyze this data and respond with valid JSON:
 }
 
 /**
- * Detect time series column patterns like Channel_1, Channel_2
+ * Detect time series column patterns like Channel_1, Channel_2 or Column_A, Column_B
  */
 function detectTimeSeriesPattern(headers: string[]): string {
-  const pattern = /^(.+?)_(\d+)$/
-  const groups: Map<string, number[]> = new Map()
+  const numberPattern = /^(.+?)_(\d+)$/
+  const letterPattern = /^(.+?)_([A-Z])(\d*)$/
+  const groups: Map<string, { periods: number[]; isLetterBased: boolean }> = new Map()
 
   headers.forEach((header) => {
-    const match = header.match(pattern)
-    if (!match) return
+    // Try number pattern first
+    let match = header.match(numberPattern)
+    if (match) {
+      const baseName = match[1]
+      const period = parseInt(match[2], 10)
 
-    const baseName = match[1]
-    const period = parseInt(match[2], 10)
-
-    if (!groups.has(baseName)) {
-      groups.set(baseName, [])
+      if (!groups.has(baseName)) {
+        groups.set(baseName, { periods: [], isLetterBased: false })
+      }
+      groups.get(baseName)!.periods.push(period)
+      return
     }
-    groups.get(baseName)!.push(period)
+
+    // Try letter pattern
+    match = header.match(letterPattern)
+    if (match) {
+      const baseName = match[1]
+      const letter = match[2]
+      const suffix = match[3] ? parseInt(match[3], 10) : 0
+      const period = suffix * 26 + (letter.charCodeAt(0) - 64)
+
+      if (!groups.has(baseName)) {
+        groups.set(baseName, { periods: [], isLetterBased: true })
+      }
+      groups.get(baseName)!.periods.push(period)
+    }
   })
 
   if (groups.size === 0) return ''
 
   const entries = Array.from(groups.entries())
-    .filter(([, periods]) => periods.length >= 2)
-    .map(([name, periods]) => `${name}: periods ${Math.min(...periods)}-${Math.max(...periods)}`)
+    .filter(([, data]) => data.periods.length >= 2)
+    .map(([name, data]) => {
+      const min = Math.min(...data.periods)
+      const max = Math.max(...data.periods)
+      const type = data.isLetterBased ? 'columns' : 'periods'
+      return `${name}: ${type} ${min}-${max} (${data.periods.length} total)`
+    })
     .slice(0, 5)
 
   if (entries.length === 0) return ''

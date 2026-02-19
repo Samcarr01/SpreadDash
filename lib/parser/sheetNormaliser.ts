@@ -6,6 +6,7 @@
  * Detects the header row in messy spreadsheets
  *
  * Scans rows 0-10 for the first row where >50% of cells are non-empty strings.
+ * Also handles financial reports with title rows by looking for date-based headers.
  * Deduplicates headers and sanitizes them.
  *
  * @param rawRows - Raw rows from SheetJS
@@ -44,6 +45,22 @@ export function detectHeaders(rawRows: unknown[][]): {
     }
   }
 
+  // If no header found, try to detect date-based headers (for financial reports)
+  if (headerIndex === -1) {
+    const dateHeaderResult = detectDateBasedHeaders(rawRows, maxHeaderSearchRows)
+    if (dateHeaderResult) {
+      return dateHeaderResult
+    }
+  }
+
+  // If still no header found, try to infer from first data row structure
+  if (headerIndex === -1) {
+    const inferredResult = inferHeadersFromData(rawRows)
+    if (inferredResult) {
+      return inferredResult
+    }
+  }
+
   // If no header found, generate Column_A, Column_B etc.
   let headers: string[]
   let dataStartIndex: number
@@ -51,7 +68,7 @@ export function detectHeaders(rawRows: unknown[][]): {
   if (headerIndex === -1) {
     // No clear header - use first row to determine column count
     const firstRow = rawRows[0] || []
-    headers = firstRow.map((_, idx) => `Column_${String.fromCharCode(65 + (idx % 26))}${idx >= 26 ? Math.floor(idx / 26) : ''}`)
+    headers = firstRow.map((_, idx) => generateColumnName(idx))
     dataStartIndex = 0
   } else {
     // Clean and deduplicate headers
@@ -62,6 +79,145 @@ export function detectHeaders(rawRows: unknown[][]): {
   const dataRows = rawRows.slice(dataStartIndex)
 
   return { headerIndex, headers, dataRows }
+}
+
+/**
+ * Generate a column name from index (A, B, C... Z, A1, B1...)
+ */
+function generateColumnName(idx: number): string {
+  const letter = String.fromCharCode(65 + (idx % 26))
+  const suffix = idx >= 26 ? Math.floor(idx / 26) : ''
+  return `Column_${letter}${suffix}`
+}
+
+/**
+ * Detect headers based on date values in a row
+ * Common in financial reports where columns represent months/quarters
+ */
+function detectDateBasedHeaders(
+  rawRows: unknown[][],
+  maxSearchRows: number
+): { headerIndex: number; headers: string[]; dataRows: unknown[][] } | null {
+  // Look for a row that contains multiple date values (could be month headers)
+  for (let i = 0; i < maxSearchRows; i++) {
+    const row = rawRows[i] || []
+
+    // Count date objects and date-like strings
+    let dateCount = 0
+    const datePositions: number[] = []
+
+    row.forEach((cell, idx) => {
+      if (cell instanceof Date && !isNaN(cell.getTime())) {
+        dateCount++
+        datePositions.push(idx)
+      } else if (typeof cell === 'string') {
+        // Check for date-like strings (e.g., "Apr 2026", "Q1 2026")
+        if (/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{1,2}[\/\-]\d{1,2}|q[1-4])/i.test(cell.trim())) {
+          dateCount++
+          datePositions.push(idx)
+        }
+      }
+    })
+
+    // If we found multiple dates (at least 3), this might be a date header row
+    if (dateCount >= 3 && dateCount > row.length * 0.2) {
+      // Use this row as a template for headers
+      const headers = row.map((cell, idx) => {
+        if (cell instanceof Date && !isNaN(cell.getTime())) {
+          // Format date as month-year for header
+          return formatDateHeader(cell)
+        } else if (cell !== null && cell !== undefined && String(cell).trim() !== '') {
+          return convertToHeaderString(cell)
+        } else {
+          return generateColumnName(idx)
+        }
+      })
+
+      // Find first row with actual data (has numbers)
+      let dataStartIndex = i + 1
+      for (let j = i + 1; j < rawRows.length; j++) {
+        const dataRow = rawRows[j] || []
+        const hasNumbers = dataRow.some(cell => typeof cell === 'number' ||
+          (typeof cell === 'string' && /^[\d,.$£€-]+$/.test(cell.trim())))
+        if (hasNumbers) {
+          dataStartIndex = j
+          break
+        }
+      }
+
+      return {
+        headerIndex: i,
+        headers: cleanHeaders(headers),
+        dataRows: rawRows.slice(dataStartIndex),
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Format a date object as a header string (e.g., "Apr 2026")
+ */
+function formatDateHeader(date: Date): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${months[date.getMonth()]} ${date.getFullYear()}`
+}
+
+/**
+ * Try to infer headers from the data structure
+ * Useful when first column is labels and rest are numeric data
+ */
+function inferHeadersFromData(
+  rawRows: unknown[][]
+): { headerIndex: number; headers: string[]; dataRows: unknown[][] } | null {
+  if (rawRows.length < 2) return null
+
+  // Skip title/subtitle rows (rows with mostly empty cells or single text value)
+  let dataStartIndex = 0
+  for (let i = 0; i < Math.min(5, rawRows.length); i++) {
+    const row = rawRows[i] || []
+    const nonEmptyCells = row.filter(cell =>
+      cell !== null && cell !== undefined && String(cell).trim() !== ''
+    )
+
+    // If row has significant data (>30% filled), it's likely data not a title
+    if (nonEmptyCells.length > row.length * 0.3) {
+      // Check if this row has a mix of text (first col) and numbers (rest)
+      const firstCell = row[0]
+      const isFirstCellText = typeof firstCell === 'string' &&
+        firstCell.trim() !== '' &&
+        isNaN(parseFloat(firstCell))
+
+      const numericCells = row.slice(1).filter(cell =>
+        typeof cell === 'number' ||
+        (typeof cell === 'string' && /^[\d,.$£€()-]+$/.test(cell.trim()))
+      )
+
+      if (isFirstCellText && numericCells.length > row.length * 0.3) {
+        dataStartIndex = i
+        break
+      }
+    }
+  }
+
+  // Generate headers based on column count
+  const firstDataRow = rawRows[dataStartIndex] || rawRows[0] || []
+  const headers = firstDataRow.map((_, idx) => {
+    if (idx === 0) return 'Label'
+    return generateColumnName(idx)
+  })
+
+  // Only return if we actually skipped some rows (detected title rows)
+  if (dataStartIndex > 0) {
+    return {
+      headerIndex: -1, // No explicit header row
+      headers: cleanHeaders(headers),
+      dataRows: rawRows.slice(dataStartIndex),
+    }
+  }
+
+  return null
 }
 
 /**

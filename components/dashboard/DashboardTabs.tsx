@@ -25,21 +25,41 @@ interface DashboardTabsProps {
 }
 
 function detectTimeSeriesColumns(headers: string[]) {
-  const pattern = /^(.+?)_(\d+)$/
+  // Match both number patterns (_1, _2) and letter patterns (_A, _B, _A1, _B1)
+  const numberPattern = /^(.+?)_(\d+)$/
+  const letterPattern = /^(.+?)_([A-Z])(\d*)$/
   const groups: Map<string, { baseName: string; periods: { period: number; column: string }[] }> = new Map()
 
   headers.forEach((header) => {
-    const match = header.match(pattern)
-    if (!match) return
+    // Try number pattern first (e.g., Website_1, Website_2)
+    let match = header.match(numberPattern)
+    if (match) {
+      const baseName = match[1].replace(/_/g, ' ').trim()
+      const period = parseInt(match[2], 10)
 
-    const baseName = match[1].replace(/_/g, ' ').trim()
-    const period = parseInt(match[2], 10)
-
-    if (!groups.has(baseName)) {
-      groups.set(baseName, { baseName, periods: [] })
+      if (!groups.has(baseName)) {
+        groups.set(baseName, { baseName, periods: [] })
+      }
+      groups.get(baseName)!.periods.push({ period, column: header })
+      return
     }
 
-    groups.get(baseName)!.periods.push({ period, column: header })
+    // Try letter pattern (e.g., Column_A, Column_B, Column_A1)
+    match = header.match(letterPattern)
+    if (match) {
+      const baseName = match[1].replace(/_/g, ' ').trim()
+      const letter = match[2]
+      const suffix = match[3] ? parseInt(match[3], 10) : 0
+
+      // Convert letter to number: A=1, B=2, ..., Z=26, then A1=27, B1=28, etc.
+      const letterValue = letter.charCodeAt(0) - 64 // A=1, B=2, etc.
+      const period = suffix * 26 + letterValue
+
+      if (!groups.has(baseName)) {
+        groups.set(baseName, { baseName, periods: [] })
+      }
+      groups.get(baseName)!.periods.push({ period, column: header })
+    }
   })
 
   const validGroups = Array.from(groups.values()).filter((group) => group.periods.length >= 2)
@@ -49,10 +69,11 @@ function detectTimeSeriesColumns(headers: string[]) {
 }
 
 function getRowLabelColumn(headers: string[], data: Record<string, unknown>[]) {
-  const pattern = /^(.+?)_\d+$/
+  // Skip columns that look like time series (both number and letter patterns)
+  const timeSeriesPattern = /^(.+?)_(\d+|[A-Z]\d*)$/
 
   for (const header of headers) {
-    if (pattern.test(header)) continue
+    if (timeSeriesPattern.test(header)) continue
 
     const firstValue = data[0]?.[header]
     if (typeof firstValue === 'string' && isNaN(parseFloat(firstValue))) {
