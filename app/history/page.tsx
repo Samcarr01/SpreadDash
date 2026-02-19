@@ -14,36 +14,46 @@ import { Button } from '@/components/ui/button'
 import { UploadSummary } from '@/types'
 import Link from 'next/link'
 import { ExternalLink, Eye } from 'lucide-react'
+import { getSessionFromCookies } from '@/lib/auth'
+import { supabaseServer } from '@/lib/supabase/server'
 
 async function getUploads(): Promise<UploadSummary[]> {
   try {
     const cookieStore = cookies()
-    const sessionCookie = cookieStore.get('sd_session')
+    const session = await getSessionFromCookies(cookieStore)
 
-    // Use VERCEL_URL in production, localhost in development
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
+    if (!session) {
+      redirect('/')
+    }
 
-    const response = await fetch(
-      `${baseUrl}/api/uploads?limit=100`,
-      {
-        headers: {
-          Cookie: `sd_session=${sessionCookie?.value || ''}`,
-        },
-        cache: 'no-store',
-      }
-    )
+    // Query Supabase directly (no HTTP fetch needed)
+    const { data: uploads, error } = await supabaseServer
+      .from('uploads')
+      .select(`
+        id,
+        filename,
+        label,
+        uploaded_by,
+        file_url,
+        file_size_bytes,
+        row_count,
+        column_count,
+        sheet_meta,
+        insights_data,
+        ai_analysis,
+        ai_status,
+        status,
+        uploaded_at
+      `)
+      .order('uploaded_at', { ascending: false })
+      .limit(100)
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        redirect('/')
-      }
+    if (error) {
+      console.error('Failed to fetch uploads:', error)
       return []
     }
 
-    const data = await response.json()
-    return data.success ? data.data.uploads : []
+    return uploads || []
   } catch (error) {
     console.error('Failed to fetch uploads:', error)
     return []

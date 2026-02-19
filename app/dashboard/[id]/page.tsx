@@ -3,39 +3,35 @@ import { notFound, redirect } from 'next/navigation'
 import TopBar from '@/components/layout/TopBar'
 import DashboardTabs from '@/components/dashboard/DashboardTabs'
 import { UploadRecord } from '@/types'
+import { getSessionFromCookies } from '@/lib/auth'
+import { supabaseServer } from '@/lib/supabase/server'
 
 async function getUpload(id: string): Promise<UploadRecord | null> {
   try {
     const cookieStore = cookies()
-    const sessionCookie = cookieStore.get('sd_session')
+    const session = await getSessionFromCookies(cookieStore)
 
-    // Use VERCEL_URL in production, localhost in development
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
-
-    const response = await fetch(
-      `${baseUrl}/api/uploads/${id}`,
-      {
-        headers: {
-          Cookie: `sd_session=${sessionCookie?.value || ''}`,
-        },
-        cache: 'no-store',
-      }
-    )
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        redirect('/')
-      }
-      if (response.status === 404) {
-        return null
-      }
-      throw new Error('Failed to fetch upload')
+    if (!session) {
+      redirect('/')
     }
 
-    const data = await response.json()
-    return data.success ? data.data : null
+    // Query Supabase directly (no HTTP fetch needed)
+    const { data: upload, error } = await supabaseServer
+      .from('uploads')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Not found
+        return null
+      }
+      console.error('Failed to fetch upload:', error)
+      return null
+    }
+
+    return upload
   } catch (error) {
     console.error('Failed to fetch upload:', error)
     return null
@@ -52,11 +48,6 @@ export default async function DashboardDetailPage({
 
   if (!upload) {
     notFound()
-  }
-
-  const handleExport = async () => {
-    'use server'
-    // This will be handled client-side via TopBar
   }
 
   return (
