@@ -17,19 +17,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
   Upload,
   Search,
   LogOut,
   FileSpreadsheet,
   Menu,
   X,
-  MoreVertical,
   Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -168,7 +161,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
                       onClick={() => setIsMobileOpen(false)}
                       className="block"
                     >
-                      <div className="flex items-start gap-2 pr-8">
+                      <div className="flex items-start gap-2 pr-10">
                         <FileSpreadsheet
                           className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
                             isActive ? 'text-primary' : 'text-muted-foreground'
@@ -206,33 +199,21 @@ export default function Sidebar({ uploads }: SidebarProps) {
                       </div>
                     </Link>
 
-                    {/* Delete Menu */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 ${
-                            isActive ? 'hover:bg-muted/80' : ''
-                          }`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            setDeleteTarget(upload)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Delete ${upload.label || upload.filename}`}
+                      className={`absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-destructive/80 hover:text-destructive ${
+                        isActive ? 'hover:bg-muted/80' : 'hover:bg-muted/70'
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setDeleteTarget(upload)
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 )
               })}
