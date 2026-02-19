@@ -168,7 +168,10 @@ export default function Sidebar({ uploads }: SidebarProps) {
                           }`}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">
+                          <p
+                            className="font-medium text-sm leading-snug break-words"
+                            title={upload.label || upload.filename}
+                          >
                             {upload.label || upload.filename}
                           </p>
                           <p className="text-xs truncate text-muted-foreground">
@@ -275,13 +278,13 @@ export default function Sidebar({ uploads }: SidebarProps) {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-[300px] border-r border-border/70 md:block">
+      <aside className="sticky top-0 hidden h-screen w-[340px] border-r border-border/70 xl:w-[360px] md:block">
         {sidebarContent}
       </aside>
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen w-[300px] border-r border-border/70 transition-transform md:hidden ${
+        className={`fixed left-0 top-0 z-50 h-screen w-[min(92vw,360px)] border-r border-border/70 transition-transform md:hidden ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
