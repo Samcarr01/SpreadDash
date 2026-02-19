@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Download, Loader2, ExternalLink } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 interface TopBarProps {
   title: string
@@ -99,21 +100,25 @@ export default function TopBar({
           <h1 className="text-2xl font-bold">{title}</h1>
         </div>
 
-        {showExport && (
-          <Button onClick={handleExport} disabled={isExporting}>
-            {isExporting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                Export PDF
-              </>
-            )}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+
+          {showExport && (
+            <Button onClick={handleExport} disabled={isExporting}>
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export PDF
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )

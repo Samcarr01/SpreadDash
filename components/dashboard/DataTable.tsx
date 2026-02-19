@@ -229,20 +229,35 @@ function formatCellValue(value: unknown): string {
     return ''
   }
 
-  // Date
-  if (value instanceof Date || (typeof value === 'string' && !isNaN(Date.parse(value)))) {
-    try {
+  // Handle Date objects directly
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) {
+      return ''
+    }
+    return value.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
+  // Handle ISO date strings (from our normalizer)
+  if (typeof value === 'string') {
+    // Check for ISO 8601 format (e.g., 2024-01-15T00:00:00.000Z)
+    const isoMatch = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+    if (isoMatch) {
       const date = new Date(value)
-      if (!isNaN(date.getTime())) {
+      if (!isNaN(date.getTime()) && date.getFullYear() >= 1950 && date.getFullYear() <= 2100) {
         return date.toLocaleDateString('en-GB', {
           day: '2-digit',
           month: 'short',
           year: 'numeric',
         })
       }
-    } catch {
-      // Fall through to string
     }
+
+    // Return string as-is if it's not a valid ISO date
+    return value
   }
 
   // Number with commas

@@ -18,7 +18,7 @@ export function detectHeaders(rawRows: unknown[][]): {
 } {
   const maxHeaderSearchRows = Math.min(10, rawRows.length)
 
-  // Find first row where >50% of cells are non-empty strings
+  // Find first row where >50% of cells are non-empty strings (not Date objects)
   let headerIndex = -1
   let potentialHeaders: unknown[] = []
 
@@ -28,7 +28,16 @@ export function detectHeaders(rawRows: unknown[][]): {
       (cell) => cell !== null && cell !== undefined && String(cell).trim() !== ''
     )
 
-    if (nonEmptyCells.length > row.length * 0.5) {
+    // Count how many are plain strings (not dates/numbers)
+    const stringCells = row.filter(
+      (cell) =>
+        typeof cell === 'string' &&
+        cell.trim() !== '' &&
+        !isDateObject(cell)
+    )
+
+    // Header row should have mostly strings, not Date objects
+    if (nonEmptyCells.length > row.length * 0.5 && stringCells.length > row.length * 0.3) {
       headerIndex = i
       potentialHeaders = row
       break
@@ -42,17 +51,45 @@ export function detectHeaders(rawRows: unknown[][]): {
   if (headerIndex === -1) {
     // No clear header - use first row to determine column count
     const firstRow = rawRows[0] || []
-    headers = firstRow.map((_, idx) => `Column_${String.fromCharCode(65 + idx)}`)
+    headers = firstRow.map((_, idx) => `Column_${String.fromCharCode(65 + (idx % 26))}${idx >= 26 ? Math.floor(idx / 26) : ''}`)
     dataStartIndex = 0
   } else {
     // Clean and deduplicate headers
-    headers = cleanHeaders(potentialHeaders.map((h) => String(h || '').trim()))
+    headers = cleanHeaders(potentialHeaders.map((h) => convertToHeaderString(h)))
     dataStartIndex = headerIndex + 1
   }
 
   const dataRows = rawRows.slice(dataStartIndex)
 
   return { headerIndex, headers, dataRows }
+}
+
+/**
+ * Check if a value is a Date object
+ */
+function isDateObject(value: unknown): boolean {
+  return value instanceof Date
+}
+
+/**
+ * Converts any value to a clean header string
+ * Handles Date objects specially to avoid ugly toString output
+ */
+function convertToHeaderString(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  // Handle Date objects - format as short date for headers
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) {
+      return ''
+    }
+    // Format date as YYYY-MM-DD for header
+    return value.toISOString().split('T')[0]
+  }
+
+  return String(value).trim()
 }
 
 /**
@@ -66,12 +103,17 @@ function cleanHeaders(rawHeaders: string[]): string[] {
   const cleaned: string[] = []
 
   for (let header of rawHeaders) {
-    // Sanitize: remove special characters except -, _, spaces
-    header = header.replace(/[^a-zA-Z0-9\s\-_]/g, '').trim()
+    // Remove excessive whitespace
+    header = header.replace(/\s+/g, ' ').trim()
+
+    // Truncate very long headers
+    if (header.length > 50) {
+      header = header.substring(0, 47) + '...'
+    }
 
     // If empty after sanitization, use Column_X
     if (!header) {
-      header = `Column_${String.fromCharCode(65 + cleaned.length)}`
+      header = `Column_${String.fromCharCode(65 + (cleaned.length % 26))}${cleaned.length >= 26 ? Math.floor(cleaned.length / 26) : ''}`
     }
 
     // Deduplicate
@@ -91,7 +133,7 @@ function cleanHeaders(rawHeaders: string[]): string[] {
 /**
  * Normalises date values to ISO 8601 format
  *
- * Supports: Excel serial numbers, dd/mm/yyyy, mm/dd/yyyy, yyyy-mm-dd,
+ * Supports: Date objects, Excel serial numbers, dd/mm/yyyy, mm/dd/yyyy, yyyy-mm-dd,
  * dd-Mon-yy, Month dd, yyyy
  *
  * @param values - Raw date values
@@ -103,77 +145,76 @@ export function normaliseDates(values: unknown[]): (string | null)[] {
       return null
     }
 
+    // Handle Date objects directly (from cellDates: true)
+    if (value instanceof Date) {
+      if (isNaN(value.getTime())) {
+        return null
+      }
+      return value.toISOString()
+    }
+
     const strValue = String(value).trim()
 
+    // Try standard Date constructor first (handles ISO format well)
+    // But only for strings that look like dates, not numbers
+    if (strValue.includes('-') || strValue.includes('/')) {
+      // Try UK format dd/mm/yyyy first (prefer over US format for ambiguous dates)
+      const ukDateMatch = strValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+      if (ukDateMatch) {
+        const [, day, month, year] = ukDateMatch
+        const fullYear = year.length === 2 ? `20${year}` : year
+        const date = new Date(parseInt(fullYear), parseInt(month) - 1, parseInt(day))
+        if (!isNaN(date.getTime())) {
+          return date.toISOString()
+        }
+      }
+
+      // Try dd-Mon-yy format (e.g., 15-Jan-25)
+      const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+      const monthMatch = strValue.match(/^(\d{1,2})-([a-z]{3})-(\d{2,4})$/i)
+      if (monthMatch) {
+        const [, day, monthName, year] = monthMatch
+        const monthIndex = monthNames.indexOf(monthName.toLowerCase())
+        if (monthIndex !== -1) {
+          const fullYear = year.length === 2 ? `20${year}` : year
+          const date = new Date(parseInt(fullYear), monthIndex, parseInt(day))
+          if (!isNaN(date.getTime())) {
+            return date.toISOString()
+          }
+        }
+      }
+
+      // Try ISO format yyyy-mm-dd
+      const isoMatch = strValue.match(/^(\d{4})-(\d{2})-(\d{2})/)
+      if (isoMatch) {
+        const date = new Date(strValue)
+        if (!isNaN(date.getTime())) {
+          return date.toISOString()
+        }
+      }
+    }
+
     // Try parsing as Excel serial number (days since 1900-01-01)
-    // Only treat as Excel date if it's a whole number or has minimal decimal places
-    // and is within realistic date range (1900-2100 = serial 1-73000)
+    // Only for plain numbers, not strings that look like dates
     const excelSerial = parseFloat(strValue)
     if (
       !isNaN(excelSerial) &&
       excelSerial > 1 &&
       excelSerial < 73000 &&
-      !strValue.includes('/') && // Exclude if it looks like a date string
+      !strValue.includes('/') &&
       !strValue.includes('-') &&
-      (excelSerial % 1 === 0 || excelSerial % 1 < 0.01) // Whole number or very small decimal
+      /^\d+(\.\d+)?$/.test(strValue) // Only pure numbers
     ) {
       try {
-        const excelEpoch = new Date(1899, 11, 30) // Excel epoch (Dec 30, 1899)
+        // Excel epoch is Jan 1, 1900, but there's a leap year bug
+        // Excel thinks 1900 was a leap year, so dates after Feb 28, 1900 are off by 1
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30)) // Dec 30, 1899
         const date = new Date(excelEpoch.getTime() + excelSerial * 86400000)
-        if (!isNaN(date.getTime())) {
+        if (!isNaN(date.getTime()) && date.getFullYear() >= 1950 && date.getFullYear() <= 2100) {
           return date.toISOString()
         }
       } catch {
-        // Continue to string parsing
-      }
-    }
-
-    // Try standard Date constructor
-    const standardDate = new Date(strValue)
-    if (!isNaN(standardDate.getTime())) {
-      return standardDate.toISOString()
-    }
-
-    // Try UK format dd/mm/yyyy (prefer over US format for ambiguous dates)
-    const ukDateMatch = strValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
-    if (ukDateMatch) {
-      const [, day, month, year] = ukDateMatch
-      const fullYear = year.length === 2 ? `20${year}` : year
-      const date = new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`)
-      if (!isNaN(date.getTime())) {
-        return date.toISOString()
-      }
-    }
-
-    // Try dd-Mon-yy format (e.g., 15-Jan-25)
-    const monthNames = [
-      'jan',
-      'feb',
-      'mar',
-      'apr',
-      'may',
-      'jun',
-      'jul',
-      'aug',
-      'sep',
-      'oct',
-      'nov',
-      'dec',
-    ]
-    const monthMatch = strValue.match(/^(\d{1,2})-([a-z]{3})-(\d{2,4})$/i)
-    if (monthMatch) {
-      const [, day, monthName, year] = monthMatch
-      const monthIndex = monthNames.indexOf(monthName.toLowerCase())
-      if (monthIndex !== -1) {
-        const fullYear = year.length === 2 ? `20${year}` : year
-        const date = new Date(
-          parseInt(fullYear),
-          monthIndex,
-          parseInt(day)
-        )
-        if (!isNaN(date.getTime())) {
-          return date.toISOString()
-        }
+        // Continue
       }
     }
 
@@ -198,10 +239,18 @@ export function normaliseNumbers(values: unknown[]): (number | null)[] {
       return null
     }
 
+    // If it's already a number, use it directly
+    if (typeof value === 'number') {
+      if (isNaN(value) || !isFinite(value)) {
+        return null
+      }
+      return Math.round(value * 10000) / 10000
+    }
+
     let strValue = String(value).trim()
 
     // Handle negative numbers in parentheses: (500) -> -500
-    const parenthesesMatch = strValue.match(/^\((\d+(?:\.\d+)?)\)$/)
+    const parenthesesMatch = strValue.match(/^\((\d+(?:,\d{3})*(?:\.\d+)?)\)$/)
     if (parenthesesMatch) {
       strValue = `-${parenthesesMatch[1]}`
     }

@@ -6,7 +6,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Upload,
   Search,
@@ -14,9 +29,12 @@ import {
   FileSpreadsheet,
   Menu,
   X,
+  MoreVertical,
+  Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
+import { useToast } from '@/hooks/use-toast'
 
 interface SidebarProps {
   uploads: UploadSummary[]
@@ -25,12 +43,55 @@ interface SidebarProps {
 export default function Sidebar({ uploads }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<UploadSummary | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/')
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/uploads/${deleteTarget.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Deleted',
+          description: `"${deleteTarget.label || deleteTarget.filename}" has been deleted.`,
+        })
+        // Redirect to dashboard if we're viewing the deleted upload
+        if (pathname.includes(deleteTarget.id)) {
+          router.push('/dashboard')
+        }
+        // Refresh the page to update the sidebar
+        router.refresh()
+      } else {
+        const data = await response.json()
+        toast({
+          variant: 'destructive',
+          title: 'Delete failed',
+          description: data.error || 'Failed to delete the upload.',
+        })
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'An error occurred while deleting.',
+      })
+    } finally {
+      setIsDeleting(false)
+      setDeleteTarget(null)
+    }
   }
 
   const filteredUploads = uploads.filter(
@@ -91,16 +152,20 @@ export default function Sidebar({ uploads }: SidebarProps) {
               {filteredUploads.map((upload) => {
                 const isActive = pathname.includes(upload.id)
                 return (
-                  <Link key={upload.id} href={`/dashboard/${upload.id}`}>
-                    <div
-                      className={`p-3 rounded-lg transition-colors cursor-pointer ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : 'hover:bg-muted'
-                      }`}
+                  <div
+                    key={upload.id}
+                    className={`group relative p-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted'
+                    }`}
+                  >
+                    <Link
+                      href={`/dashboard/${upload.id}`}
                       onClick={() => setIsMobileOpen(false)}
+                      className="block"
                     >
-                      <div className="flex items-start gap-2">
+                      <div className="flex items-start gap-2 pr-8">
                         <FileSpreadsheet
                           className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
                             isActive ? 'text-primary-foreground' : 'text-muted-foreground'
@@ -136,8 +201,36 @@ export default function Sidebar({ uploads }: SidebarProps) {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+
+                    {/* Delete Menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity ${
+                            isActive ? 'hover:bg-primary-foreground/20' : ''
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            setDeleteTarget(upload)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 )
               })}
             </div>
@@ -161,6 +254,29 @@ export default function Sidebar({ uploads }: SidebarProps) {
 
   return (
     <>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Upload?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteTarget?.label || deleteTarget?.filename}"?
+              This will permanently remove the spreadsheet and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Mobile Toggle */}
       <Button
         variant="ghost"

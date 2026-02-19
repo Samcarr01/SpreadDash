@@ -5,7 +5,17 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { AlertCircle, CheckCircle2, Sparkles, RefreshCw } from 'lucide-react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  Sparkles,
+  RefreshCw,
+  Lightbulb,
+  Zap,
+  ArrowRight,
+  Target,
+  TrendingUp,
+} from 'lucide-react'
 
 interface AISummaryCardProps {
   aiAnalysis: AIAnalysisResult | null
@@ -84,16 +94,40 @@ export default function AISummaryCard({
 
       {/* Executive Summary */}
       <div className="mb-6">
-        <h4 className="text-sm font-semibold mb-2">Executive Summary</h4>
+        <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+          <Target className="h-4 w-4 text-blue-600" />
+          Executive Summary
+        </h4>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {aiAnalysis.executiveSummary}
         </p>
       </div>
 
+      {/* Key Takeaways */}
+      {aiAnalysis.keyTakeaways && aiAnalysis.keyTakeaways.length > 0 && (
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-blue-900 dark:text-blue-100">
+            <TrendingUp className="h-4 w-4" />
+            Key Takeaways
+          </h4>
+          <ul className="space-y-2">
+            {aiAnalysis.keyTakeaways.map((takeaway, index) => (
+              <li key={index} className="flex gap-2 text-sm">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
+                <span className="text-blue-800 dark:text-blue-200">{takeaway}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Cross-Column Patterns */}
       {aiAnalysis.crossColumnPatterns.length > 0 && (
         <div className="mb-6">
-          <h4 className="text-sm font-semibold mb-2">Key Patterns</h4>
+          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            Key Patterns
+          </h4>
           <ul className="space-y-2">
             {aiAnalysis.crossColumnPatterns.map((pattern, index) => (
               <li key={index} className="flex gap-2 text-sm">
@@ -105,10 +139,55 @@ export default function AISummaryCard({
         </div>
       )}
 
+      {/* Quick Wins & Next Steps Grid */}
+      {((aiAnalysis.quickWins && aiAnalysis.quickWins.length > 0) ||
+        (aiAnalysis.nextSteps && aiAnalysis.nextSteps.length > 0)) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Quick Wins */}
+          {aiAnalysis.quickWins && aiAnalysis.quickWins.length > 0 && (
+            <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-green-800 dark:text-green-200">
+                <Zap className="h-4 w-4" />
+                Quick Wins
+              </h4>
+              <ul className="space-y-2">
+                {aiAnalysis.quickWins.map((win, index) => (
+                  <li key={index} className="flex gap-2 text-sm">
+                    <span className="text-green-600 dark:text-green-400">→</span>
+                    <span className="text-green-700 dark:text-green-300">{win}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Next Steps */}
+          {aiAnalysis.nextSteps && aiAnalysis.nextSteps.length > 0 && (
+            <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-purple-800 dark:text-purple-200">
+                <ArrowRight className="h-4 w-4" />
+                Next Steps
+              </h4>
+              <ul className="space-y-2">
+                {aiAnalysis.nextSteps.map((step, index) => (
+                  <li key={index} className="flex gap-2 text-sm">
+                    <span className="text-purple-600 dark:text-purple-400 font-medium">{index + 1}.</span>
+                    <span className="text-purple-700 dark:text-purple-300">{step}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Action Items */}
       {aiAnalysis.actionItems.length > 0 && (
         <div className="mb-6">
-          <h4 className="text-sm font-semibold mb-2">Recommended Actions</h4>
+          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-yellow-600" />
+            Recommended Actions
+          </h4>
           <ul className="space-y-2">
             {aiAnalysis.actionItems.map((item, index) => (
               <li key={index} className="flex gap-2 text-sm">
@@ -125,7 +204,10 @@ export default function AISummaryCard({
       {/* Data Quality Concerns */}
       {aiAnalysis.dataQualityConcerns.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold mb-2">Data Quality Notes</h4>
+          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            Data Quality Notes
+          </h4>
           <div className="space-y-2">
             {aiAnalysis.dataQualityConcerns.map((concern, index) => (
               <div

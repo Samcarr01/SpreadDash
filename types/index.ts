@@ -124,8 +124,11 @@ export type InsightsResult = z.infer<typeof InsightsResultSchema>;
 
 export const AIAnalysisResultSchema = z.object({
   executiveSummary: z.string().max(1000),
+  keyTakeaways: z.array(z.string().max(150)).max(4).optional(),
   crossColumnPatterns: z.array(z.string().max(300)).max(3),
   actionItems: z.array(z.string().max(300)).max(3),
+  quickWins: z.array(z.string().max(200)).max(3).optional(),
+  nextSteps: z.array(z.string().max(200)).max(3).optional(),
   dataQualityConcerns: z.array(z.string().max(200)).max(5),
 });
 export type AIAnalysisResult = z.infer<typeof AIAnalysisResultSchema>;
