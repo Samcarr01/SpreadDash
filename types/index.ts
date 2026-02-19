@@ -123,17 +123,17 @@ export type InsightsResult = z.infer<typeof InsightsResultSchema>;
 // ============================================================
 
 export const AIAnalysisResultSchema = z.object({
-  executiveSummary: z.string().max(1000),
-  keyTakeaways: z.array(z.string().max(150)).max(4).optional(),
-  crossColumnPatterns: z.array(z.string().max(300)).max(3),
-  actionItems: z.array(z.string().max(300)).max(3),
-  quickWins: z.array(z.string().max(200)).max(3).optional(),
-  nextSteps: z.array(z.string().max(200)).max(3).optional(),
-  dataQualityConcerns: z.array(z.string().max(200)).max(5),
+  executiveSummary: z.string().max(1500),
+  keyTakeaways: z.array(z.string().max(200)).max(4).optional(),
+  crossColumnPatterns: z.array(z.string().max(500)).max(3),
+  actionItems: z.array(z.string().max(400)).max(3),
+  quickWins: z.array(z.string().max(300)).max(3).optional(),
+  nextSteps: z.array(z.string().max(300)).max(3).optional(),
+  dataQualityConcerns: z.array(z.string().max(300)).max(5),
   // AI recommendations for what to display
   displayRecommendations: z.object({
     topMetrics: z.array(z.string()).max(6).optional(), // Most important metrics to highlight
-    focusAreas: z.array(z.string().max(150)).max(3).optional(), // What to focus on
+    focusAreas: z.array(z.string().max(200)).max(3).optional(), // What to focus on
     chartSuggestion: z.string().max(500).optional(), // What chart would be most useful
     periodType: z.enum(['month', 'quarter', 'week', 'year', 'period', 'unknown']).optional(), // What the _1, _2, _3 represents
     periodLabels: z.array(z.string()).max(12).optional(), // Human-friendly labels like ["Jan", "Feb", "Mar"] or ["Q1", "Q2"]
