@@ -347,7 +347,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
                       </div>
                       {metric.sparkline.length > 0 && (
                         <div className="w-16 h-8">
-                          <ResponsiveContainer width="100%" height="100%">
+                          <ResponsiveContainer width="100%" height="100%" minWidth={60} minHeight={30}>
                             <LineChart data={metric.sparkline.map((v, i) => ({ i, v }))}>
                               <Line
                                 type="monotone"
