@@ -103,7 +103,7 @@ export default function DataTable({ data, headers }: DataTableProps) {
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex gap-4">
+      <div className="surface-panel flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
         <Input
           placeholder="Search all columns..."
           value={searchTerm}
@@ -111,7 +111,7 @@ export default function DataTable({ data, headers }: DataTableProps) {
             setSearchTerm(e.target.value)
             setCurrentPage(1)
           }}
-          className="max-w-sm"
+          className="max-w-sm border-border/70 bg-background/80"
         />
 
         <DropdownMenu>
@@ -136,7 +136,7 @@ export default function DataTable({ data, headers }: DataTableProps) {
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="surface-panel overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -190,7 +190,7 @@ export default function DataTable({ data, headers }: DataTableProps) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="surface-panel flex flex-col gap-3 p-4 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
         <div>
           Showing {(currentPage - 1) * rowsPerPage + 1} to{' '}
           {Math.min(currentPage * rowsPerPage, processedData.length)} of{' '}

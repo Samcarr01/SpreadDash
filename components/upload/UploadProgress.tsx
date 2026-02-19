@@ -28,7 +28,7 @@ export default function UploadProgress({
           <Loader2 className="h-8 w-8 text-primary animate-spin" />
         )}
         <div className="flex-1">
-          <p className="font-medium">{statusMessages[status]}</p>
+          <p className="font-semibold">{statusMessages[status]}</p>
           {filename && (
             <p className="text-sm text-muted-foreground">{filename}</p>
           )}

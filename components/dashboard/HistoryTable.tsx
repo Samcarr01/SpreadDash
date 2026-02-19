@@ -96,7 +96,7 @@ export default function HistoryTable({ uploads }: HistoryTableProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="surface-panel overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

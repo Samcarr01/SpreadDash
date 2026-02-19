@@ -101,12 +101,15 @@ export default function Sidebar({ uploads }: SidebarProps) {
   )
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col bg-background/75 backdrop-blur-md">
       {/* Header */}
-      <div className="p-4 border-b">
+      <div className="border-b border-border/70 p-4">
         <div className="flex items-center justify-between mb-4">
           <Link href="/dashboard">
-            <h1 className="text-xl font-bold">SpreadDash</h1>
+            <div>
+              <p className="kicker">Workspace</p>
+              <h1 className="font-display text-2xl font-semibold">SpreadDash</h1>
+            </div>
           </Link>
           <Button
             variant="ghost"
@@ -120,7 +123,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
 
         {/* New Upload Button */}
         <Link href="/dashboard">
-          <Button className="w-full">
+          <Button className="h-10 w-full font-semibold">
             <Upload className="h-4 w-4 mr-2" />
             New Upload
           </Button>
@@ -128,14 +131,14 @@ export default function Sidebar({ uploads }: SidebarProps) {
       </div>
 
       {/* Search */}
-      <div className="p-4 border-b">
+      <div className="border-b border-border/70 p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search uploads..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
+            className="h-10 border-border/70 bg-background/80 pl-9"
           />
         </div>
       </div>
@@ -154,10 +157,10 @@ export default function Sidebar({ uploads }: SidebarProps) {
                 return (
                   <div
                     key={upload.id}
-                    className={`group relative p-3 rounded-lg transition-colors ${
+                    className={`group relative rounded-xl border p-3 transition-all ${
                       isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-muted'
+                        ? 'border-primary/50 bg-primary text-primary-foreground shadow-sm'
+                        : 'border-transparent hover:border-border hover:bg-card/80'
                     }`}
                   >
                     <Link
@@ -209,7 +212,7 @@ export default function Sidebar({ uploads }: SidebarProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity ${
+                          className={`absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 ${
                             isActive ? 'hover:bg-primary-foreground/20' : ''
                           }`}
                           onClick={(e) => e.stopPropagation()}
@@ -239,10 +242,10 @@ export default function Sidebar({ uploads }: SidebarProps) {
       </ScrollArea>
 
       {/* Logout Button */}
-      <div className="p-4 border-t">
+      <div className="border-t border-border/70 p-4">
         <Button
           variant="ghost"
-          className="w-full justify-start"
+          className="w-full justify-start rounded-lg font-medium"
           onClick={handleLogout}
         >
           <LogOut className="h-4 w-4 mr-2" />
@@ -279,9 +282,9 @@ export default function Sidebar({ uploads }: SidebarProps) {
 
       {/* Mobile Toggle */}
       <Button
-        variant="ghost"
+        variant="secondary"
         size="icon"
-        className="md:hidden fixed top-4 left-4 z-50"
+        className="fixed left-4 top-4 z-50 border border-border/70 shadow-sm md:hidden"
         onClick={() => setIsMobileOpen(true)}
       >
         <Menu className="h-5 w-5" />
@@ -296,13 +299,13 @@ export default function Sidebar({ uploads }: SidebarProps) {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block w-[280px] border-r bg-background h-screen sticky top-0">
+      <aside className="sticky top-0 hidden h-screen w-[300px] border-r border-border/70 md:block">
         {sidebarContent}
       </aside>
 
       {/* Mobile Sidebar */}
       <aside
-        className={`fixed top-0 left-0 w-[280px] border-r bg-background h-screen z-50 transition-transform md:hidden ${
+        className={`fixed left-0 top-0 z-50 h-screen w-[300px] border-r border-border/70 transition-transform md:hidden ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -31,7 +31,7 @@ export default function AISummaryCard({
   // Loading state
   if (aiStatus === 'pending') {
     return (
-      <Card className="p-6">
+      <Card className="surface-panel p-6">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-5 w-5 text-primary animate-pulse" />
           <h3 className="text-lg font-semibold">AI Analysis</h3>
@@ -51,7 +51,7 @@ export default function AISummaryCard({
   // Failed or skipped state
   if (aiStatus === 'failed' || aiStatus === 'skipped' || !aiAnalysis) {
     return (
-      <Card className="p-6 border-yellow-200 dark:border-yellow-900 bg-yellow-50/50 dark:bg-yellow-950/20">
+      <Card className="surface-panel border-yellow-300/60 bg-yellow-50/80 p-6 dark:border-yellow-900 dark:bg-yellow-950/20">
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
           <div className="flex-1">
@@ -82,11 +82,11 @@ export default function AISummaryCard({
 
   // Success state
   return (
-    <Card className="p-6 border-blue-200 dark:border-blue-900">
+    <Card className="surface-panel border-primary/25 p-6">
       <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <Sparkles className="h-5 w-5 text-primary" />
         <h3 className="text-lg font-semibold">AI Analysis</h3>
-        <Badge variant="secondary" className="ml-auto">
+        <Badge variant="secondary" className="ml-auto bg-primary/10 text-primary">
           <Sparkles className="h-3 w-3 mr-1" />
           AI-generated
         </Badge>
@@ -105,16 +105,16 @@ export default function AISummaryCard({
 
       {/* Key Takeaways */}
       {aiAnalysis.keyTakeaways && aiAnalysis.keyTakeaways.length > 0 && (
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-blue-900 dark:text-blue-100">
+        <div className="mb-6 rounded-lg bg-primary/10 p-4">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary">
             <TrendingUp className="h-4 w-4" />
             Key Takeaways
           </h4>
           <ul className="space-y-2">
             {aiAnalysis.keyTakeaways.map((takeaway, index) => (
               <li key={index} className="flex gap-2 text-sm">
-                <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
-                <span className="text-blue-800 dark:text-blue-200">{takeaway}</span>
+                <span className="font-bold text-primary">•</span>
+                <span className="text-foreground/85">{takeaway}</span>
               </li>
             ))}
           </ul>
@@ -145,7 +145,7 @@ export default function AISummaryCard({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* Quick Wins */}
           {aiAnalysis.quickWins && aiAnalysis.quickWins.length > 0 && (
-            <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
               <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-green-800 dark:text-green-200">
                 <Zap className="h-4 w-4" />
                 Quick Wins
@@ -163,16 +163,16 @@ export default function AISummaryCard({
 
           {/* Next Steps */}
           {aiAnalysis.nextSteps && aiAnalysis.nextSteps.length > 0 && (
-            <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
-              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-purple-800 dark:text-purple-200">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+              <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
                 <ArrowRight className="h-4 w-4" />
                 Next Steps
               </h4>
               <ul className="space-y-2">
                 {aiAnalysis.nextSteps.map((step, index) => (
                   <li key={index} className="flex gap-2 text-sm">
-                    <span className="text-purple-600 dark:text-purple-400 font-medium">{index + 1}.</span>
-                    <span className="text-purple-700 dark:text-purple-300">{step}</span>
+                    <span className="font-medium text-amber-700 dark:text-amber-300">{index + 1}.</span>
+                    <span className="text-amber-800 dark:text-amber-200">{step}</span>
                   </li>
                 ))}
               </ul>

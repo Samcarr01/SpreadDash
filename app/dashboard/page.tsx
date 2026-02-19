@@ -60,19 +60,19 @@ export default async function DashboardPage() {
     <div>
       <TopBar title="Dashboard" />
 
-      <div className="p-6 space-y-8">
+      <div className="space-y-8 p-4 md:p-6">
         {/* Upload Zone */}
         <section>
-          <h2 className="text-xl font-semibold mb-4">Upload New Spreadsheet</h2>
+          <h2 className="mb-4 text-2xl font-semibold">Upload New Spreadsheet</h2>
           <DropZone />
         </section>
 
         {/* Recent Uploads */}
         <section>
-          <h2 className="text-xl font-semibold mb-4">Recent Uploads</h2>
+          <h2 className="mb-4 text-2xl font-semibold">Recent Uploads</h2>
 
           {uploads.length === 0 ? (
-            <Card className="p-12 text-center">
+            <Card className="surface-panel p-12 text-center">
               <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No uploads yet</h3>
               <p className="text-sm text-muted-foreground">
@@ -83,7 +83,7 @@ export default async function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {uploads.map((upload) => (
                 <Link key={upload.id} href={`/dashboard/${upload.id}`}>
-                  <Card className="p-4 hover:border-primary transition-colors cursor-pointer h-full">
+                  <Card className="surface-card h-full cursor-pointer p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50">
                     <div className="flex items-start gap-3">
                       <FileSpreadsheet className="h-8 w-8 text-primary flex-shrink-0" />
                       <div className="flex-1 min-w-0">

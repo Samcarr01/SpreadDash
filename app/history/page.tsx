@@ -56,9 +56,9 @@ export default async function HistoryPage() {
     <div>
       <TopBar title="Upload History" />
 
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {uploads.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="surface-panel py-12 text-center">
             <p className="text-muted-foreground">No uploads yet</p>
           </div>
         ) : (

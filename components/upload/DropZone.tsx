@@ -137,7 +137,7 @@ export default function DropZone() {
 
   if (uploadStatus !== 'idle' && uploadStatus !== 'error') {
     return (
-      <Card className="p-8">
+      <Card className="surface-panel p-8">
         <UploadProgress
           status={uploadStatus}
           progress={uploadProgress}
@@ -148,13 +148,21 @@ export default function DropZone() {
   }
 
   return (
-    <Card className="p-8">
+    <Card className="surface-panel p-6 md:p-8">
+      <div className="mb-5">
+        <p className="kicker">Upload Pipeline</p>
+        <h3 className="mt-1 text-2xl font-semibold">Add New Spreadsheet</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Drag and drop a file or browse from your computer. We support CSV and Excel up to 25 MB.
+        </p>
+      </div>
+
       {/* Drop Zone */}
       <div
-        className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
+        className={`rounded-xl border-2 border-dashed p-10 text-center transition-colors md:p-12 ${
           isDragging
             ? 'border-primary bg-primary/5'
-            : 'border-muted-foreground/25 hover:border-primary/50'
+            : 'border-border hover:border-primary/60 hover:bg-primary/5'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -189,7 +197,7 @@ export default function DropZone() {
           <div className="flex flex-col items-center gap-3">
             <Upload className="h-12 w-12 text-muted-foreground" />
             <div>
-              <p className="font-medium">
+              <p className="text-lg font-semibold">
                 Drag and drop your spreadsheet here
               </p>
               <p className="text-sm text-muted-foreground">
@@ -205,30 +213,32 @@ export default function DropZone() {
 
       {/* Optional Fields */}
       {file && (
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div>
-            <Label htmlFor="label">Label (Optional)</Label>
+            <Label htmlFor="label" className="text-xs uppercase tracking-wider text-muted-foreground">Label (Optional)</Label>
             <Input
               id="label"
               placeholder="e.g., Q1 2024 Sales Report"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
+              className="mt-2 h-10 border-border/70 bg-background/80"
             />
           </div>
 
           <div>
-            <Label htmlFor="uploadedBy">Uploaded By</Label>
+            <Label htmlFor="uploadedBy" className="text-xs uppercase tracking-wider text-muted-foreground">Uploaded By</Label>
             <Input
               id="uploadedBy"
               placeholder="Team"
               value={uploadedBy}
               onChange={(e) => setUploadedBy(e.target.value)}
+              className="mt-2 h-10 border-border/70 bg-background/80"
             />
           </div>
 
           <Button
             onClick={handleSubmit}
-            className="w-full"
+            className="w-full md:col-span-2 h-11 font-semibold"
             disabled={!file}
           >
             Upload & Analyze

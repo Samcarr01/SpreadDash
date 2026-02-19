@@ -50,41 +50,48 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="surface-card w-full max-w-md border-border/70">
       <CardHeader>
-        <CardTitle className="text-2xl text-center">SpreadDash</CardTitle>
+        <p className="kicker text-center">Secure Team Access</p>
+        <CardTitle className="text-center text-3xl font-semibold">Enter Workspace</CardTitle>
+        <p className="text-center text-sm text-muted-foreground">
+          Use your shared access code to open the dashboard.
+        </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-2">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="code">Access Code</Label>
+            <Label htmlFor="code" className="text-xs uppercase tracking-wider text-muted-foreground">
+              Access Code
+            </Label>
             <Input
               ref={inputRef}
               id="code"
               type="password"
-              placeholder="Enter access code"
+              placeholder="Enter your code"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               disabled={isLoading}
               required
+              className="h-11 border-border/70 bg-background/80"
             />
           </div>
 
           {error && (
-            <div className="flex items-start gap-2 p-3 text-sm bg-destructive/10 border border-destructive rounded-md">
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
               <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
               <p className="text-destructive">{error}</p>
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="h-11 w-full text-sm font-semibold" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Logging in...
+                Signing in...
               </>
             ) : (
-              'Enter'
+              'Continue'
             )}
           </Button>
         </form>

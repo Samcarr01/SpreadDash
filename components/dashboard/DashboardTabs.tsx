@@ -248,62 +248,62 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
   return (
     <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="charts">Charts</TabsTrigger>
-        <TabsTrigger value="data">Data</TabsTrigger>
-        <TabsTrigger value="insights">Insights</TabsTrigger>
+      <TabsList className="surface-panel grid w-full grid-cols-2 gap-1 p-1 md:grid-cols-4">
+        <TabsTrigger value="overview" className="font-medium">Overview</TabsTrigger>
+        <TabsTrigger value="charts" className="font-medium">Charts</TabsTrigger>
+        <TabsTrigger value="data" className="font-medium">Data</TabsTrigger>
+        <TabsTrigger value="insights" className="font-medium">Insights</TabsTrigger>
       </TabsList>
 
       {/* Overview Tab */}
       <TabsContent value="overview" className="space-y-6 mt-6">
         {/* Data Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
+          <Card className="surface-card p-4 md:p-5">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500 rounded-lg">
-                <Rows className="h-5 w-5 text-white" />
+              <div className="rounded-lg bg-primary/15 p-2">
+                <Rows className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Rows</p>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{upload.row_count.toLocaleString()}</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Rows</p>
+                <p className="text-2xl font-semibold">{upload.row_count.toLocaleString()}</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
+          <Card className="surface-card p-4 md:p-5">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500 rounded-lg">
-                <Columns className="h-5 w-5 text-white" />
+              <div className="rounded-lg bg-emerald-500/15 p-2">
+                <Columns className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium">Channels</p>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                <p className="text-sm font-medium text-muted-foreground">Channels</p>
+                <p className="text-2xl font-semibold">
                   {hasTimeSeriesData ? timeSeriesGroups.length : upload.column_count}
                 </p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800">
+          <Card className="surface-card p-4 md:p-5">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500 rounded-lg">
-                <Activity className="h-5 w-5 text-white" />
+              <div className="rounded-lg bg-amber-500/15 p-2">
+                <Activity className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Time Periods</p>
-                <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                <p className="text-sm font-medium text-muted-foreground">Time Periods</p>
+                <p className="text-2xl font-semibold">
                   {hasTimeSeriesData ? timeSeriesGroups[0]?.periods.length || 0 : '-'}
                 </p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800">
+          <Card className="surface-card p-4 md:p-5">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-500 rounded-lg">
-                <Calendar className="h-5 w-5 text-white" />
+              <div className="rounded-lg bg-sky-500/15 p-2">
+                <Calendar className="h-5 w-5 text-sky-600 dark:text-sky-400" />
               </div>
               <div>
-                <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Uploaded</p>
-                <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                <p className="text-sm font-medium text-muted-foreground">Uploaded</p>
+                <p className="text-lg font-semibold">
                   {new Date(upload.uploaded_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                 </p>
               </div>
@@ -314,13 +314,13 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
         {/* Channel Performance Cards */}
         {channelMetrics.length > 0 && (
           <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold">
               <TrendingUp className="h-5 w-5 text-primary" />
               Channel Performance
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {channelMetrics.map((metric, idx) => (
-                <Card key={metric.name} className="p-4">
+              {channelMetrics.map((metric) => (
+                <Card key={metric.name} className="surface-card p-4">
                   <div className="flex flex-col space-y-2">
                     <p className="text-sm font-medium text-muted-foreground">
                       {metric.name}
@@ -376,8 +376,8 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
         {/* Time Series Overview Chart */}
         {timeSeriesChartData && timeSeriesChartData.length > 0 && (
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Card className="surface-panel p-6">
+            <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold">
               <BarChart3 className="h-5 w-5 text-primary" />
               Performance Over Time
             </h2>
@@ -413,33 +413,33 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
         {/* AI Summary Card */}
         {upload.ai_status === 'completed' && upload.ai_analysis && (
-          <Card className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50 border-indigo-200 dark:border-indigo-800">
+          <Card className="surface-panel border-primary/20 bg-primary/5 p-6">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-indigo-500 rounded-lg flex-shrink-0">
-                <Sparkles className="h-5 w-5 text-white" />
+              <div className="flex-shrink-0 rounded-lg bg-primary p-2">
+                <Sparkles className="h-5 w-5 text-primary-foreground" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-3">
-                  <h2 className="text-xl font-semibold text-indigo-900 dark:text-indigo-100">AI Summary</h2>
-                  <Badge variant="secondary" className="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
+                  <h2 className="text-2xl font-semibold">AI Summary</h2>
+                  <Badge variant="secondary" className="bg-primary/10 text-primary">
                     AI-generated
                   </Badge>
                 </div>
-                <p className="text-indigo-800 dark:text-indigo-200 leading-relaxed">
+                <p className="leading-relaxed text-foreground/85">
                   {upload.ai_analysis.executiveSummary}
                 </p>
 
                 {/* AI Focus Areas */}
                 {upload.ai_analysis.displayRecommendations?.focusAreas &&
                  upload.ai_analysis.displayRecommendations.focusAreas.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-700">
-                    <p className="font-medium text-indigo-900 dark:text-indigo-100 mb-2 flex items-center gap-2">
+                  <div className="mt-4 border-t border-border/70 pt-4">
+                    <p className="mb-2 flex items-center gap-2 font-medium">
                       <Target className="h-4 w-4" />
                       Key Focus Areas
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {upload.ai_analysis.displayRecommendations.focusAreas.map((area, idx) => (
-                        <Badge key={idx} variant="outline" className="bg-indigo-100/50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-600">
+                        <Badge key={idx} variant="outline" className="border-border bg-background/80 text-foreground/80">
                           {area}
                         </Badge>
                       ))}
@@ -448,14 +448,14 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
                 )}
 
                 {upload.ai_analysis.actionItems && upload.ai_analysis.actionItems.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-700">
-                    <p className="font-medium text-indigo-900 dark:text-indigo-100 mb-2 flex items-center gap-2">
+                  <div className="mt-4 border-t border-border/70 pt-4">
+                    <p className="mb-2 flex items-center gap-2 font-medium">
                       <Lightbulb className="h-4 w-4" />
                       Quick Actions
                     </p>
                     <ul className="space-y-1">
                       {upload.ai_analysis.actionItems.slice(0, 3).map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm text-indigo-700 dark:text-indigo-300">
+                        <li key={idx} className="flex items-start gap-2 text-sm text-foreground/80">
                           <ArrowRight className="h-4 w-4 mt-0.5 flex-shrink-0" />
                           <span>{item}</span>
                         </li>
@@ -471,7 +471,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
         {/* Quick Insights */}
         {upload.insights_data && upload.insights_data.insights && upload.insights_data.insights.length > 0 && (
           <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold">
               <Lightbulb className="h-5 w-5 text-yellow-500" />
               Quick Insights
             </h2>
@@ -479,7 +479,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
               {upload.insights_data.insights.slice(0, 3).map((insight) => (
                 <Card
                   key={insight.id}
-                  className={`p-4 border-l-4 ${
+                  className={`surface-card border-l-4 p-4 ${
                     insight.severity === 'positive'
                       ? 'border-l-green-500 bg-green-50 dark:bg-green-950/30'
                       : insight.severity === 'negative'
@@ -504,7 +504,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
           <>
             {/* Trends Line Chart */}
             {timeSeriesChartData && (
-              <Card className="p-6">
+              <Card className="surface-panel p-6">
                 <h3 className="text-lg font-semibold mb-4">Channel Trends Over Time</h3>
                 <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -532,7 +532,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
             {/* Area Chart */}
             {timeSeriesChartData && (
-              <Card className="p-6">
+              <Card className="surface-panel p-6">
                 <h3 className="text-lg font-semibold mb-4">Cumulative Performance</h3>
                 <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -561,7 +561,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
 
             {/* Activity Comparison Bar Chart */}
             {activityChartData && (
-              <Card className="p-6">
+              <Card className="surface-panel p-6">
                 <h3 className="text-lg font-semibold mb-4">Performance by Activity</h3>
                 <div className="h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -586,12 +586,12 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
             )}
 
             {/* Period Comparison Table */}
-            <Card className="p-6">
+            <Card className="surface-panel p-6">
               <h3 className="text-lg font-semibold mb-4">Channel Summary by {aiPeriodType === 'month' ? 'Month' : aiPeriodType === 'quarter' ? 'Quarter' : 'Period'}</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b">
+                    <tr className="border-b border-border/70">
                       <th className="text-left p-2 font-medium">Channel</th>
                       {timeSeriesGroups[0]?.periods.map((p, idx) => {
                         let label: string
@@ -617,7 +617,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
                   </thead>
                   <tbody>
                     {channelMetrics.map((metric) => (
-                      <tr key={metric.name} className="border-b hover:bg-muted/50">
+                      <tr key={metric.name} className="border-b border-border/60 hover:bg-muted/50">
                         <td className="p-2 font-medium">{metric.name}</td>
                         {metric.sparkline.map((val, idx) => (
                           <td key={idx} className="text-right p-2">{val.toLocaleString()}</td>
@@ -639,7 +639,7 @@ export default function DashboardTabs({ upload }: DashboardTabsProps) {
           </>
         ) : (
           /* Fallback for non-time-series data */
-          <Card className="p-12 text-center">
+          <Card className="surface-panel p-12 text-center">
             <BarChart3 className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
             <h3 className="text-lg font-semibold mb-2">Limited Chart Data</h3>
             <p className="text-muted-foreground">

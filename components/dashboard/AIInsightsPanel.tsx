@@ -48,7 +48,7 @@ export default function AIInsightsPanel({ upload }: AIInsightsPanelProps) {
       {/* AI Analysis Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">AI Analysis</h2>
+          <h2 className="text-2xl font-semibold">AI Analysis</h2>
           {upload.ai_status === 'completed' && (
             <Button
               variant="outline"
@@ -70,11 +70,11 @@ export default function AIInsightsPanel({ upload }: AIInsightsPanelProps) {
 
       {/* Rule-Based Insights Section */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Detected Insights</h2>
+        <h2 className="mb-4 text-2xl font-semibold">Detected Insights</h2>
         {upload.insights_data && upload.insights_data.insights.length > 0 ? (
           <InsightPanel insights={upload.insights_data.insights} />
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="surface-panel py-8 text-center text-muted-foreground">
             <p>No insights generated for this dataset</p>
           </div>
         )}

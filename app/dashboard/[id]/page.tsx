@@ -58,7 +58,7 @@ export default async function DashboardDetailPage({
         showExport={true}
       />
 
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <DashboardTabs upload={upload} />
       </div>
     </div>
