@@ -1,0 +1,52 @@
+{
+  "name": "spreaddash",
+  "version": "1.0.0",
+  "description": "Internal spreadsheet-to-dashboard tool with auto-analysis and team sharing",
+  "language": "typescript",
+  "framework": "nextjs",
+  "frameworkVersion": "14",
+  "router": "app",
+  "database": "postgresql",
+  "databaseProvider": "supabase",
+  "authProvider": "custom-access-code",
+  "deployment": "vercel",
+  "styling": ["tailwindcss", "shadcn-ui"],
+  "promptPacks": [
+    "auth@1.0.0",
+    "api@1.0.0",
+    "ui@1.0.0",
+    "parser@1.0.0",
+    "db@1.0.0",
+    "insights@1.0.0",
+    "ai@1.0.0",
+    "export@1.0.0"
+  ],
+  "chains": [
+    {
+      "name": "full-build",
+      "steps": [
+        "types-and-schemas",
+        "supabase-setup",
+        "auth-system",
+        "parser-engine",
+        "insights-engine",
+        "ai-analysis-layer",
+        "api-routes",
+        "ui-components",
+        "dashboard-pages",
+        "pdf-export",
+        "middleware-and-guards",
+        "polish-and-test"
+      ]
+    }
+  ],
+  "constraints": {
+    "maxUploadSize": "25MB",
+    "allowedFileTypes": [".xlsx", ".xls", ".csv"],
+    "sessionDuration": "7d",
+    "rateLimit": "10/min",
+    "maxColumnsPerSheet": 50,
+    "maxRowsPerSheet": 100000
+  },
+  "environments": ["development", "staging", "production"]
+}

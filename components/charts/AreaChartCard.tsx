@@ -1,0 +1,75 @@
+'use client'
+
+import { Card } from '@/components/ui/card'
+import { CHART_COLOURS } from '@/types'
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+
+interface AreaChartCardProps {
+  data: Array<Record<string, unknown>>
+  xKey: string
+  yKeys: string[]
+  title?: string
+  colours?: readonly string[]
+}
+
+export default function AreaChartCard({
+  data,
+  xKey,
+  yKeys,
+  title,
+  colours = CHART_COLOURS,
+}: AreaChartCardProps) {
+  if (!data || data.length === 0) {
+    return (
+      <Card className="p-6">
+        <p className="text-sm text-muted-foreground text-center">
+          No data available for chart
+        </p>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="p-6">
+      {title && <h3 className="text-lg font-semibold mb-4">{title}</h3>}
+      <ResponsiveContainer width="100%" height={400}>
+        <AreaChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <XAxis
+            dataKey={xKey}
+            className="text-xs"
+            tick={{ fill: 'currentColor' }}
+          />
+          <YAxis className="text-xs" tick={{ fill: 'currentColor' }} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: 'hsl(var(--background))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '6px',
+            }}
+          />
+          {yKeys.length > 1 && <Legend />}
+          {yKeys.map((key, index) => (
+            <Area
+              key={key}
+              type="monotone"
+              dataKey={key}
+              stroke={colours[index % colours.length]}
+              fill={colours[index % colours.length]}
+              fillOpacity={0.6}
+            />
+          ))}
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
+  )
+}
