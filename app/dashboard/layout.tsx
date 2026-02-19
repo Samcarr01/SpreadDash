@@ -1,12 +1,19 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { unstable_noStore as noStore } from 'next/cache'
 import Sidebar from '@/components/layout/Sidebar'
 import { UploadSummary } from '@/types'
 import { getSessionFromCookies } from '@/lib/auth'
 import { supabaseServer } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getUploads(): Promise<UploadSummary[]> {
   try {
+    // Always fetch fresh data for sidebar upload list.
+    noStore()
+
     const cookieStore = cookies()
     const session = await getSessionFromCookies(cookieStore)
 
