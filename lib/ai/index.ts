@@ -67,7 +67,7 @@ export async function analyseWithAI(
     const response = await client.messages.create(
       {
         model: HAIKU_MODEL,
-        max_tokens: 1024,
+        max_tokens: 2048,
         temperature: 0,
         system: systemPrompt,
         messages: [
